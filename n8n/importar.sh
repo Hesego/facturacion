@@ -13,7 +13,7 @@ const e = process.env;
 const seguro = e.SMTP_SECURE === "true";
 const credenciales = [
   { id: "gastosPostgres01", name: "Postgres Gastos (n8n)", type: "postgres",
-    data: { host: "postgres", port: 5432, database: "gastos", user: "gastos_n8n", password: e.GASTOS_N8N_PASSWORD, ssl: "disable" } },
+    data: { host: e.GASTOS_DB_HOST || "postgres", port: 5432, database: "gastos", user: "gastos_n8n", password: e.GASTOS_N8N_PASSWORD, ssl: "disable" } },
   { id: "gastosSmtp000001", name: "SMTP Gastos", type: "smtp",
     data: { host: e.SMTP_HOST, port: Number(e.SMTP_PORT || 587), secure: seguro, user: e.SMTP_USER || "", password: e.SMTP_PASSWORD || "",
             disableStartTls: !seguro && !e.SMTP_USER } },

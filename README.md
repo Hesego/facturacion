@@ -24,6 +24,7 @@ SOL → RQ → AP → OC → AG → ES → PG_ENV → PG_APR → RP → FT
 | [`docs/decisiones.md`](docs/decisiones.md) | Decisiones acordadas (simplificación, asignación a una persona, PG en dos subetapas, SLA…) |
 | [`docs/api.md`](docs/api.md) | Rutas de la API y códigos de error |
 | [`docs/n8n.md`](docs/n8n.md) | Outbox, workflows, correo con Microsoft 365, otros canales |
+| [`docs/despliegue.md`](docs/despliegue.md) | Despliegue en Portainer (Swarm, red `hesegonet`, Traefik) y variables del stack |
 | [`brand/README.md`](brand/README.md) | Archivos maestros de marca pendientes |
 
 ---

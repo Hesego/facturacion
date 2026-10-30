@@ -2,7 +2,11 @@
 # Prepara MinIO: bucket privado + usuario de la aplicación limitado a ese bucket. Idempotente.
 set -eu
 
-mc alias set local http://minio:9000 "$MINIO_ROOT_USER" "$MINIO_ROOT_PASSWORD"
+# Espera a que MinIO responda (en Swarm no hay depends_on)
+until mc alias set local "${MINIO_URL:-http://minio:9000}" "$MINIO_ROOT_USER" "$MINIO_ROOT_PASSWORD" >/dev/null 2>&1; do
+  echo "Esperando a MinIO..."
+  sleep 3
+done
 
 mc mb --ignore-existing "local/$S3_BUCKET"
 mc anonymous set none "local/$S3_BUCKET"

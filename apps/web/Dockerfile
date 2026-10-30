@@ -13,6 +13,8 @@ COPY brand brand
 RUN pnpm --filter @gastos/web build
 
 FROM nginx:1.27.3-alpine
-COPY apps/web/nginx.conf /etc/nginx/conf.d/default.conf
+# Plantilla: nginx sustituye ${API_UPSTREAM} al arrancar (en Portainer es fact-api:3000)
+ENV API_UPSTREAM=api:3000
+COPY apps/web/nginx.conf /etc/nginx/templates/default.conf.template
 COPY --from=construccion /repo/apps/web/dist /usr/share/nginx/html
 EXPOSE 8080
