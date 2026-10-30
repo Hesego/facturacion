@@ -34,8 +34,8 @@ En GitHub (Settings → Secrets and variables → Actions) deben existir los sec
 | `MINIO_ROOT_PASSWORD` | Administrador de MinIO (mínimo 8 caracteres) |
 | `S3_SECRET_KEY` | Clave del usuario `gastos-app` de MinIO (mínimo 8 caracteres) |
 | `ADMIN_EMAIL`, `ADMIN_PASSWORD` | Primer administrador de la aplicación |
-| `SMTP_USER`, `SMTP_PASSWORD` | Buzón de Microsoft 365 que envía las notificaciones |
-| `MAIL_FROM` | Opcional. Por defecto `Gastos Hesego <gastos@hesegoingenieria.com>` |
+| `SMTP_USER`, `SMTP_PASSWORD` | Cuenta de Gmail que envía las notificaciones y su contraseña de aplicación (ver `docs/n8n.md`) |
+| `MAIL_FROM` | Opcional. Vacío = se envía desde `SMTP_USER` |
 | `SEED_DEMO`, `DEMO_PASSWORD` | Opcional. `true` carga usuarios de prueba (por defecto `false`) |
 
 Las contraseñas de PostgreSQL van dentro de URLs de conexión: use solo letras, números, `-` y `_`.

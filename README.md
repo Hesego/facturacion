@@ -23,7 +23,7 @@ SOL → RQ → AP → OC → AG → ES → PG_ENV → PG_APR → RP → FT
 |---|---|
 | [`docs/decisiones.md`](docs/decisiones.md) | Decisiones acordadas (simplificación, asignación a una persona, PG en dos subetapas, SLA…) |
 | [`docs/api.md`](docs/api.md) | Rutas de la API y códigos de error |
-| [`docs/n8n.md`](docs/n8n.md) | Outbox, workflows, correo con Microsoft 365, otros canales |
+| [`docs/n8n.md`](docs/n8n.md) | Outbox, workflows, correo con Gmail, otros canales |
 | [`docs/despliegue.md`](docs/despliegue.md) | Despliegue en Portainer (Swarm, red `hesegonet`, Traefik) y variables del stack |
 | [`brand/README.md`](brand/README.md) | Archivos maestros de marca pendientes |
 
@@ -35,7 +35,7 @@ SOL → RQ → AP → OC → AG → ES → PG_ENV → PG_APR → RP → FT
 Navegador ──▶ web (nginx + React) ──/api──▶ api (Node + TypeScript) ──▶ PostgreSQL  (fuente única de verdad)
                                               │   │                         ▲
                                               │   └──▶ MinIO / S3 (soportes) │ rol de solo lectura de SLA
-                                              └── relay del outbox ──▶ n8n ──┘──▶ correo (Mailpit · Microsoft 365)
+                                              └── relay del outbox ──▶ n8n ──┘──▶ correo (Mailpit · Gmail)
 ```
 
 - **PostgreSQL** guarda el estado y además protege las reglas críticas aunque alguien se salte la API:
@@ -82,7 +82,7 @@ docker compose exec n8n sh /flujo/importar.sh
 docker compose restart n8n
 ```
 
-El script crea las credenciales (Postgres con el rol restringido `gastos_n8n` y SMTP), importa los 4 workflows de `n8n/workflows/` y los deja activos. Se puede volver a ejecutar. En local los correos llegan a Mailpit. Para Microsoft 365 y otros canales, vea [`docs/n8n.md`](docs/n8n.md).
+El script crea las credenciales (Postgres con el rol restringido `gastos_n8n` y SMTP), importa los 4 workflows de `n8n/workflows/` y los deja activos. Se puede volver a ejecutar. En local los correos llegan a Mailpit. Para Gmail en producción y otros canales, vea [`docs/n8n.md`](docs/n8n.md).
 
 ### Variables de entorno (`.env`)
 
@@ -100,7 +100,7 @@ El script crea las credenciales (Postgres con el rol restringido `gastos_n8n` y 
 | `N8N_ENCRYPTION_KEY` | Cifra las credenciales de n8n. Genérela con `openssl rand -hex 32` y no la cambie después |
 | `N8N_WEBHOOK_TOKEN` | Token compartido entre el relay de la API y los webhooks de n8n |
 | `N8N_HOST`, `N8N_WEBHOOK_URL`, `N8N_SECURE_COOKIE` | Dirección pública de n8n |
-| `MAIL_FROM`, `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASSWORD` | Correo saliente (Mailpit en local, Microsoft 365 en producción) |
+| `MAIL_FROM`, `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASSWORD` | Correo saliente (Mailpit en local, Gmail en producción) |
 | `APP_URL` | URL pública de la aplicación (enlaces de los correos) |
 | `SESION_HORAS` | Duración de la sesión |
 | `COOKIE_SECURE` | `true` en producción (requiere HTTPS) |

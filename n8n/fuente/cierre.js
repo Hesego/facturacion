@@ -15,4 +15,4 @@ const html = correo({
   nota: 'Recibes este aviso porque participaste en alguna etapa de esta transacción.',
 });
 
-return mensajes(personas, { flujo: 'cierre', outboxId: e.outbox_id, transaccionId: t.id, tipo: 'cierre', asunto: `[${t.consecutivo}] Gasto pagado y cerrado`, html });
+return mensajes(personas, { flujo: 'cierre', outboxId: e.outbox_id, transaccionId: t.id, tipo: 'cierre', asunto: asuntoGasto(t, 'Pagado y cerrado'), html });

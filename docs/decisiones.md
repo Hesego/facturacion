@@ -14,7 +14,7 @@ Registro de lo acordado antes de construir. Si una decisión cambia, se actualiz
 | 4 | Facturas frente al valor | La suma de las facturas activas debe ser **igual** al valor del gasto. Se exige para enviar (PG_ENV) y aprobar (PG_APR) el pago. Cada factura debe ser del mismo NIT del proveedor de la transacción. |
 | 5 | «ES consolidada» | No es un documento: PG_ENV es la notificación a gerencia financiera para aprobar el pago, acompañada de todos los soportes ya cargados (facturas, RQ, OC, ES). |
 | 6 | SLA | Se cuenta en **días hábiles** (lunes a viernes, sin festivos de Colombia). Semáforo: mismo día = verde, 1 día = amarillo, 2 días = naranja, 3 o más = rojo (vencida). Los umbrales son configurables. |
-| 7 | Correo y acceso | Producción con **Microsoft 365** (SMTP `smtp.office365.com:587`). El esquema de usuarios queda listo para iniciar sesión con Microsoft (Entra ID) más adelante. |
+| 7 | Correo y acceso | Producción con **Gmail** (SMTP `smtp.gmail.com:587`, contraseña de aplicación); cada correo muestra a quien hizo el paso y le dirige las respuestas (Reply-To). El asunto es el que escribe el solicitante. El esquema de usuarios queda listo para iniciar sesión con Microsoft (Entra ID) más adelante. |
 | 8 | Activos de marca | Aún no hay archivos maestros. El código define las rutas esperadas en `brand/` y usa un marcador de texto mientras tanto. **Nunca se redibuja el logo** (Manual de Marca v1.1, lámina 9). |
 | 9 | Moneda | Solo pesos colombianos (COP). |
 

@@ -6,6 +6,9 @@
 
 const APP_URL = String($env.APP_URL || '').replace(/\/$/, '');
 
+/** Cuenta que envía (Gmail solo deja enviar desde la cuenta autenticada): la de MAIL_FROM o SMTP_USER. */
+const CORREO_ENVIO = (String($env.MAIL_FROM || '').match(/<([^>]+)>/) || [])[1] || String($env.MAIL_FROM || '').trim() || String($env.SMTP_USER || '');
+
 /** Canales activos. Para sumar Teams, Slack o WhatsApp: agréguelo aquí y configure su rama en el nodo «Canal». */
 const CANALES = ['correo'];
 
@@ -24,6 +27,21 @@ function validarToken(entrada) {
   if (!$env.N8N_WEBHOOK_TOKEN || token !== $env.N8N_WEBHOOK_TOKEN) {
     throw new Error('Token de webhook inválido');
   }
+}
+
+/**
+ * Remitente visible. Con actor, el correo muestra su nombre («Pepito Pérez vía Gastos Hesego»)
+ * aunque lo envíe la cuenta de la plataforma; las respuestas le llegan a él (Reply-To).
+ */
+function remitente(actor) {
+  const nombre = actor && actor.nombre ? `${actor.nombre} vía Gastos Hesego` : 'Gastos Hesego';
+  return `"${nombre.replace(/[<>"]/g, '')}" <${CORREO_ENVIO}>`;
+}
+
+/** Asunto del correo: el que escribió el solicitante (descripción), con el consecutivo para buscarlo. */
+function asuntoGasto(t, prefijo) {
+  const base = t.descripcion ? `${t.descripcion} [${t.consecutivo}]` : `Gasto ${t.consecutivo}`;
+  return prefijo ? `${prefijo}: ${base}` : base;
 }
 
 /** Personas únicas por correo, sin la que se indique (quien hizo el cambio). */
@@ -77,7 +95,7 @@ function correo({ kicker, titulo, intro, filas = [], cita, citaEtiqueta, tabla, 
   <tr><td style="padding:28px 32px 28px">
     ${nota ? `<p style="margin:0 0 14px;font:14px/1.5 Arial,sans-serif;color:#4E646E">${nota}</p>` : ''}
     <div style="border-top:1px solid #E2EAED;padding-top:16px;font:700 11px/1.4 Arial,sans-serif;letter-spacing:1.5px;text-transform:uppercase;color:#0A7D8C">Trabajamos de manera segura, confiable y diligente.</div>
-    <div style="margin-top:6px;font:12px/1.5 Arial,sans-serif;color:#4E646E">Mensaje automático de la plataforma de gastos. No respondas este correo.</div>
+    <div style="margin-top:6px;font:12px/1.5 Arial,sans-serif;color:#4E646E">Mensaje automático de la plataforma de gastos.</div>
   </td></tr>
 </table>
 </td></tr>
@@ -101,7 +119,7 @@ function filasGasto(t) {
  * Un mensaje por destinatario y canal. La clave de idempotencia evita enviarlo dos veces aunque
  * el evento llegue repetido (reintentos del relay).
  */
-function mensajes(personas, { flujo, outboxId, transaccionId, tipo, asunto, html, claveBase }) {
+function mensajes(personas, { flujo, outboxId, transaccionId, tipo, asunto, html, claveBase, actor }) {
   const salida = [];
   for (const p of personas) {
     for (const canal of CANALES) {
@@ -116,6 +134,8 @@ function mensajes(personas, { flujo, outboxId, transaccionId, tipo, asunto, html
           nombre: p.nombre,
           asunto,
           html,
+          de: remitente(actor),
+          responder_a: (actor && actor.email) || '',
         },
       });
     }

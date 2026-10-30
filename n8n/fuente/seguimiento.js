@@ -16,15 +16,15 @@ if (!personas.length) return sinMensajes();
 const actor = `<b>${escapar(e.actor.nombre)}</b>`;
 let asunto, titulo, intro;
 if (anulada) {
-  asunto = `[${t.consecutivo}] Gasto anulado`;
+  asunto = asuntoGasto(t, 'Anulado');
   titulo = 'Gasto anulado';
   intro = `${actor} anuló la transacción cuando estaba en <b>${escapar(e.etapa_origen.nombre)}</b>. Sus facturas y números de referencia quedaron liberados.`;
 } else if (devuelta) {
-  asunto = `[${t.consecutivo}] Devuelto a ${e.etapa_destino.nombre}`;
+  asunto = asuntoGasto(t, `Devuelto a ${e.etapa_destino.nombre}`);
   titulo = 'Gasto devuelto';
   intro = `${actor} devolvió la transacción desde <b>${escapar(e.etapa_origen.nombre)}</b> a <b>${escapar(e.etapa_destino.nombre)}</b>${t.asignado ? `, a cargo de <b>${escapar(t.asignado)}</b>` : ''}.`;
 } else {
-  asunto = `[${t.consecutivo}] Avanzó a ${e.etapa_destino.nombre}`;
+  asunto = asuntoGasto(t, `Avanzó a ${e.etapa_destino.nombre}`);
   titulo = 'Avance del gasto';
   intro = `${actor} completó <b>${escapar(e.etapa_origen.nombre)}</b>. La transacción pasó a <b>${escapar(e.etapa_destino.nombre)}</b>${t.asignado ? `, a cargo de <b>${escapar(t.asignado)}</b>` : ''}.`;
 }
@@ -40,4 +40,4 @@ const html = correo({
   nota: 'Recibes este aviso porque solicitaste el gasto o perteneces a contabilidad, dueña del proceso.',
 });
 
-return mensajes(personas, { flujo: 'seguimiento', outboxId: e.outbox_id, transaccionId: t.id, tipo: anulada ? 'anulacion' : 'seguimiento', asunto, html });
+return mensajes(personas, { flujo: 'seguimiento', outboxId: e.outbox_id, transaccionId: t.id, tipo: anulada ? 'anulacion' : 'seguimiento', asunto, html, actor: e.actor });

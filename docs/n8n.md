@@ -61,20 +61,27 @@ Después importa los 4 workflows y los activa. Se puede volver a ejecutar sin pr
 
 > Si su versión de n8n no acepta credenciales en texto plano al importar, créelas a mano en *Credentials* con esos mismos nombres y vuelva a abrir cada workflow para seleccionarlas.
 
-## Correo en producción (Microsoft 365)
+## Correo en producción (Gmail)
 
-En `.env`:
+Los correos salen de una cuenta de Gmail con **contraseña de aplicación** (Cuenta de Google → Seguridad → Verificación en dos pasos → Contraseñas de aplicación):
 
 ```
-SMTP_HOST=smtp.office365.com
+SMTP_HOST=smtp.gmail.com
 SMTP_PORT=587
 SMTP_SECURE=false
-SMTP_USER=gastos@hesegoingenieria.com
-SMTP_PASSWORD=…
-MAIL_FROM=Gastos Hesego <gastos@hesegoingenieria.com>
+SMTP_USER=cuenta@gmail.com
+SMTP_PASSWORD=<contraseña de aplicación de 16 letras>
+MAIL_FROM=            # vacío = se envía desde SMTP_USER
 ```
 
-El buzón necesita **SMTP AUTH** habilitado en Microsoft 365. `MAIL_FROM` debe ser ese mismo buzón o uno con permiso «Enviar como». Después ejecute de nuevo `importar.sh` y reinicie n8n.
+Gmail solo deja enviar desde la cuenta autenticada, así que cada correo sale de `SMTP_USER` pero **muestra a quien hizo el paso** y las respuestas le llegan a esa persona:
+
+- **De:** `"Pepito Pérez vía Gastos Hesego" <cuenta@gmail.com>`
+- **Responder a:** `pepito@hesegoingenieria.com`
+- **Asunto:** el que escribió el solicitante en la solicitud, con el consecutivo: `Botas dieléctricas cuadrilla Jamundí [GTO-2026-000012]`. En devoluciones y reasignaciones se antepone `Devuelto:` o `Reasignado:`.
+- **Cuerpo:** etapa, comentario o motivo, datos del gasto y el botón **Revisar la solicitud** con el enlace a la transacción.
+
+Gmail tiene un límite de unos 500 destinatarios al día por cuenta. En Portainer, `fact-n8n` vuelve a crear la credencial SMTP en cada arranque; en local ejecute de nuevo `importar.sh` y reinicie n8n.
 
 ## Agregar Teams, Slack o WhatsApp
 

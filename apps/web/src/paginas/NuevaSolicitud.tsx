@@ -41,7 +41,7 @@ export function NuevaSolicitud() {
   const enviar = async () => {
     setIntentado(true);
     setError(null);
-    if (facturasIncompletas || !siguiente || destinoIncompleto(para, siguiente.areas)) return;
+    if (facturasIncompletas || !descripcion.trim() || !siguiente || destinoIncompleto(para, siguiente.areas)) return;
     setEnviando(true);
     try {
       const { archivos, campos } = archivosFacturas(facturas);
@@ -64,6 +64,12 @@ export function NuevaSolicitud() {
 
       <Tarjeta className="max-w-2xl">
         <div className="space-y-6">
+          <Campo etiqueta="Asunto" id="descripcion" requerido
+            error={intentado && !descripcion.trim() ? 'Escribe el asunto de la solicitud' : undefined}
+            ayuda="Es el asunto del correo que recibe la persona a la que se la envías, y la identifica en las listas.">
+            <Entrada id="descripcion" maxLength={200} value={descripcion} onChange={(e) => setDescripcion(e.target.value)} placeholder="Botas dieléctricas cuadrilla Jamundí" />
+          </Campo>
+
           <Campo etiqueta={facturas.length > 1 ? `Facturas (${facturas.length})` : 'Facturas'} requerido
             error={intentado && !facturas.length ? 'Adjunta al menos una factura' : undefined}
             ayuda="Puedes subir varias de una vez. Si tienes el ZIP o el XML de la DIAN, súbelo también: el número, el NIT y el valor se leen solos.">
@@ -87,15 +93,10 @@ export function NuevaSolicitud() {
             </button>
             {mas && (
               <div className="mt-4 space-y-5">
-                <div className="grid gap-5 sm:grid-cols-2">
-                  <Campo etiqueta="Valor" id="valor" ayuda={/^\d+(\.\d{1,2})?$/.test(valorNormal) && Number(valorNormal) > 0 ? formatearCOP(valorNormal) : 'Si vienen los XML, es la suma de las facturas'}>
-                    <Entrada id="valor" inputMode="decimal" value={valor} onChange={(e) => setValor(e.target.value)} placeholder="1.500.000" />
-                  </Campo>
-                  <Campo etiqueta="Descripción corta" id="descripcion" ayuda="Para reconocerla en las listas">
-                    <Entrada id="descripcion" maxLength={200} value={descripcion} onChange={(e) => setDescripcion(e.target.value)} placeholder="Botas dieléctricas cuadrilla Jamundí" />
-                  </Campo>
-                </div>
-                <Campo etiqueta="Comentario para quien la recibe" id="comentario">
+                <Campo etiqueta="Valor" id="valor" ayuda={/^\d+(\.\d{1,2})?$/.test(valorNormal) && Number(valorNormal) > 0 ? formatearCOP(valorNormal) : 'Si vienen los XML, es la suma de las facturas'}>
+                  <Entrada id="valor" inputMode="decimal" value={valor} onChange={(e) => setValor(e.target.value)} placeholder="1.500.000" />
+                </Campo>
+                <Campo etiqueta="Comentario para quien la recibe" id="comentario" ayuda="Va en el cuerpo del correo.">
                   <AreaTexto id="comentario" value={comentario} onChange={(e) => setComentario(e.target.value)} className="min-h-[72px]" />
                 </Campo>
               </div>

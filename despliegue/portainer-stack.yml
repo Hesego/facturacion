@@ -221,13 +221,14 @@ services:
     ## Los workflows leen estas variables con $env (enlaces, remitente y token)
       - N8N_BLOCK_ENV_ACCESS_IN_NODE=false
       - APP_URL=https://facturacion.devops.hesegoingenieria.com
-      - MAIL_FROM=${MAIL_FROM:-Gastos Hesego <gastos@hesegoingenieria.com>}
+    ## Vacío = se envía desde SMTP_USER. Cada correo muestra «<quien hizo el paso> vía Gastos Hesego»
+      - MAIL_FROM=${MAIL_FROM:-}
       - N8N_WEBHOOK_TOKEN=${N8N_WEBHOOK_TOKEN}
     ## Credenciales que crea importar.sh
       - GASTOS_DB_HOST=fact-db
       - GASTOS_N8N_PASSWORD=${GASTOS_N8N_PASSWORD}
-    ## ✉️ SMTP de Microsoft 365 (requiere SMTP AUTH habilitado para el buzón)
-      - SMTP_HOST=${SMTP_HOST:-smtp.office365.com}
+    ## ✉️ SMTP de Gmail: SMTP_USER es la cuenta y SMTP_PASSWORD una contraseña de aplicación
+      - SMTP_HOST=${SMTP_HOST:-smtp.gmail.com}
       - SMTP_PORT=${SMTP_PORT:-587}
       - SMTP_SECURE=${SMTP_SECURE:-false}
       - SMTP_USER=${SMTP_USER}

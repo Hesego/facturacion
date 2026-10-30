@@ -93,7 +93,9 @@ describe('1 · Equipo responsable', () => {
     assert.equal(m.para, 'ops.sst@hesego.test');
     assert.equal(m.canal, 'correo');
     assert.equal(m.clave, '7a1c3e5e-0000-4000-a000-000000000001:responsables:correo:ops.sst@hesego.test');
-    assert.equal(m.asunto, '[GTO-2026-000012] Tienes un gasto en Requerimiento');
+    assert.equal(m.asunto, 'Botas dieléctricas <para> cuadrillas [GTO-2026-000012]', 'el asunto es el que escribió el solicitante');
+    assert.equal(m.de, '"Carolina Ruiz vía Gastos Hesego" <g@hesego.test>', 'muestra a quien la envió, desde la cuenta de la plataforma');
+    assert.equal(m.responder_a, 'contabilidad1@hesego.test', 'las respuestas le llegan a quien la envió');
     assert.match(m.html, /El plazo es de 3 días hábiles/);
     assert.match(m.html, /FE-4101/);
     assert.match(m.html, /Seguridad y salud en el trabajo/);
@@ -107,7 +109,7 @@ describe('1 · Equipo responsable', () => {
       tipo: 'transaccion.devuelta', motivo: 'El pantallazo no es legible', etapa_origen: { codigo: 'AP', nombre: 'Aprobación del RQ' },
       actor: { nombre: 'Marcela Díaz', email: 'lider.sst@hesego.test' },
     })));
-    assert.equal(r[0].json.asunto, '[GTO-2026-000012] Te devolvieron un gasto a Requerimiento');
+    assert.equal(r[0].json.asunto, 'Devuelto: Botas dieléctricas <para> cuadrillas [GTO-2026-000012]');
     assert.match(r[0].json.html, /El pantallazo no es legible/);
     guardar('1-devolucion', r[0].json.html);
   });
@@ -119,8 +121,16 @@ describe('1 · Equipo responsable', () => {
       destinatarios: { responsables: [persona('ops.tics@hesego.test', 'Natalia Gómez')], seguimiento: [], participantes: [] },
     })));
     assert.equal(r[0].json.para, 'ops.tics@hesego.test');
-    assert.equal(r[0].json.asunto, '[GTO-2026-000012] Te asignaron un gasto en Requerimiento');
+    assert.equal(r[0].json.asunto, 'Reasignado: Botas dieléctricas <para> cuadrillas [GTO-2026-000012]');
     assert.match(r[0].json.html, /Vacaciones de Julián/);
+  });
+
+  it('sin asunto escrito usa el consecutivo; MAIL_FROM vacío usa SMTP_USER', async () => {
+    const e = evento();
+    e.transaccion.descripcion = null;
+    const r = await ejecutar('1-notificar-responsables.json', 'Preparar mensajes', webhook(e), { ...ENV, MAIL_FROM: '', SMTP_USER: 'plataforma@gmail.com' });
+    assert.equal(r[0].json.asunto, 'Gasto GTO-2026-000012');
+    assert.equal(r[0].json.de, '"Carolina Ruiz vía Gastos Hesego" <plataforma@gmail.com>');
   });
 
   it('sin responsables (etapa del sistema) responde sin enviar', async () => {
@@ -136,7 +146,7 @@ describe('2 · Solicitante y contabilidad', () => {
     e.destinatarios.seguimiento.push(persona('CONTABILIDAD2@hesego.test', 'Andrés Mejía'));
     const r = await ejecutar('2-notificar-seguimiento.json', 'Preparar mensajes', webhook(e));
     assert.deepEqual(r.map((x) => x.json.para), ['contabilidad2@hesego.test', 'doble.rol@hesego.test']);
-    assert.equal(r[0].json.asunto, '[GTO-2026-000012] Avanzó a Requerimiento');
+    assert.equal(r[0].json.asunto, 'Avanzó a Requerimiento: Botas dieléctricas <para> cuadrillas [GTO-2026-000012]');
     guardar('2-seguimiento', r[0].json.html);
   });
 
@@ -146,7 +156,7 @@ describe('2 · Solicitante y contabilidad', () => {
     e.destinatarios.participantes = [persona('ops.sst@hesego.test', 'Julián Ortiz'), persona('contabilidad2@hesego.test', 'Andrés Mejía')];
     const r = await ejecutar('2-notificar-seguimiento.json', 'Preparar mensajes', webhook(e));
     assert.deepEqual(r.map((x) => x.json.para).sort(), ['doble.rol@hesego.test', 'ops.sst@hesego.test']);
-    assert.equal(r[0].json.asunto, '[GTO-2026-000012] Gasto anulado');
+    assert.equal(r[0].json.asunto, 'Anulado: Botas dieléctricas <para> cuadrillas [GTO-2026-000012]');
     guardar('2-anulacion', r[0].json.html);
   });
 
@@ -163,7 +173,9 @@ describe('4 · Cierre', () => {
     e.destinatarios.participantes = [persona('ops.sst@hesego.test', 'J'), persona('compras1@hesego.test', 'D'), persona('contabilidad1@hesego.test', 'C')];
     const r = await ejecutar('4-notificar-cierre.json', 'Preparar mensajes', webhook(e));
     assert.equal(r.length, 3);
-    assert.equal(r[0].json.asunto, '[GTO-2026-000012] Gasto pagado y cerrado');
+    assert.equal(r[0].json.asunto, 'Pagado y cerrado: Botas dieléctricas <para> cuadrillas [GTO-2026-000012]');
+    assert.equal(r[0].json.de, '"Gastos Hesego" <g@hesego.test>', 'sin actor: remitente de la plataforma');
+    assert.equal(r[0].json.responder_a, '');
     assert.match(r[0].json.clave, /:cierre:correo:/);
     guardar('4-cierre', r[0].json.html);
   });

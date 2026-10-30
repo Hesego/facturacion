@@ -10,11 +10,8 @@ const reasignada = e.tipo === 'transaccion.reasignada';
 const devuelta = e.tipo === 'transaccion.devuelta';
 const destino = e.etapa_destino;
 const sla = destino.sla_dias === 1 ? '1 día hábil' : `${destino.sla_dias} días hábiles`;
-const asunto = reasignada
-  ? `[${t.consecutivo}] Te asignaron un gasto en ${destino.nombre}`
-  : devuelta
-    ? `[${t.consecutivo}] Te devolvieron un gasto a ${destino.nombre}`
-    : `[${t.consecutivo}] Tienes un gasto en ${destino.nombre}`;
+// El asunto es el que escribió el solicitante; en devolución y reasignación se antepone qué pasó
+const asunto = asuntoGasto(t, reasignada ? 'Reasignado' : devuelta ? 'Devuelto' : '');
 
 const html = correo({
   kicker: `${t.consecutivo} · ${destino.codigo}`,
@@ -27,7 +24,8 @@ const html = correo({
   cita: reasignada || devuelta ? e.motivo : e.comentario,
   citaEtiqueta: reasignada || devuelta ? 'Motivo' : 'Comentario',
   filas: filasGasto(t),
-  boton: { texto: 'Abrir la transacción', url: t.url },
+  boton: { texto: 'Revisar la solicitud', url: t.url },
+  nota: `Si respondes este correo, la respuesta le llega a ${escapar(e.actor.nombre)}.`,
 });
 
-return mensajes(responsables, { flujo: 'responsables', outboxId: e.outbox_id, transaccionId: t.id, tipo: reasignada ? 'reasignacion' : devuelta ? 'devolucion' : 'nueva_etapa', asunto, html });
+return mensajes(responsables, { flujo: 'responsables', outboxId: e.outbox_id, transaccionId: t.id, tipo: reasignada ? 'reasignacion' : devuelta ? 'devolucion' : 'nueva_etapa', asunto, html, actor: e.actor });
