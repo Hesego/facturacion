@@ -1,0 +1,209 @@
+# Plataforma de gestión del ciclo de vida de gastos · Hesego Ingeniería S.A.S.
+# Todas las imágenes vienen de Docker Hub y van con versión fija.
+# Uso: cp .env.example .env  (y cambiar las claves)  →  docker compose up -d
+#
+# Fase 3: base de datos, migraciones, semillas, almacenamiento, n8n, correo local, API e interfaz.
+# La aplicación queda en http://localhost:8080
+
+name: flujo-gastos
+
+x-zona-horaria: &zona-horaria
+  TZ: America/Bogota
+
+services:
+  postgres:
+    image: postgres:16.4-alpine
+    restart: unless-stopped
+    environment:
+      <<: *zona-horaria
+      PGTZ: America/Bogota
+      POSTGRES_USER: ${POSTGRES_SUPERUSER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_SUPERUSER_PASSWORD:?Defina POSTGRES_SUPERUSER_PASSWORD en .env}
+      # Leídas por db/init/01-roles-y-bases.sh la primera vez que se crea el volumen
+      GASTOS_OWNER_PASSWORD: ${GASTOS_OWNER_PASSWORD:?Defina GASTOS_OWNER_PASSWORD en .env}
+      GASTOS_APP_PASSWORD: ${GASTOS_APP_PASSWORD:?Defina GASTOS_APP_PASSWORD en .env}
+      GASTOS_N8N_PASSWORD: ${GASTOS_N8N_PASSWORD:?Defina GASTOS_N8N_PASSWORD en .env}
+      N8N_DB_PASSWORD: ${N8N_DB_PASSWORD:?Defina N8N_DB_PASSWORD en .env}
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+      - ./db/init:/docker-entrypoint-initdb.d:ro
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d gastos"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  # Aplica las migraciones SQL de db/migrations (dbmate) y termina.
+  migrate:
+    image: amacneil/dbmate:2.19.0
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://gastos_owner:${GASTOS_OWNER_PASSWORD}@postgres:5432/gastos?sslmode=disable
+      DBMATE_MIGRATIONS_DIR: /db/migrations
+      DBMATE_NO_DUMP_SCHEMA: "true"
+      DBMATE_WAIT: "true"
+    volumes:
+      - ./db:/db:ro
+    command: ["up"]
+    restart: "no"
+
+  # Carga los datos semilla (idempotente) y termina.
+  seed:
+    image: postgres:16.4-alpine
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    environment:
+      PGHOST: postgres
+      PGDATABASE: gastos
+      PGUSER: gastos_owner
+      PGPASSWORD: ${GASTOS_OWNER_PASSWORD}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:?Defina ADMIN_EMAIL en .env}
+      ADMIN_NOMBRE: ${ADMIN_NOMBRE:-Administrador}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?Defina ADMIN_PASSWORD en .env}
+      SEED_DEMO: ${SEED_DEMO:-true}
+      DEMO_PASSWORD: ${DEMO_PASSWORD:-Hesego2026*}
+    volumes:
+      - ./db/seeds:/seeds:ro
+    entrypoint: ["/bin/sh", "/seeds/aplicar.sh"]
+    restart: "no"
+
+  minio:
+    image: minio/minio:RELEASE.2025-04-22T22-12-26Z
+    restart: unless-stopped
+    command: ["server", "/data", "--console-address", ":9001"]
+    environment:
+      <<: *zona-horaria
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?Defina MINIO_ROOT_PASSWORD en .env}
+    volumes:
+      - minio_data:/data
+    ports:
+      - "${MINIO_API_PORT:-9000}:9000"
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  # Crea el bucket privado y el usuario de la aplicación con acceso solo a ese bucket.
+  minio-init:
+    image: minio/mc:RELEASE.2025-04-16T18-13-26Z
+    depends_on:
+      minio:
+        condition: service_healthy
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+      S3_BUCKET: ${S3_BUCKET:-gastos-soportes}
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY:?Defina S3_ACCESS_KEY en .env}
+      S3_SECRET_KEY: ${S3_SECRET_KEY:?Defina S3_SECRET_KEY en .env}
+    volumes:
+      - ./minio:/minio:ro
+    entrypoint: ["/bin/sh", "/minio/init.sh"]
+    restart: "no"
+
+  n8n:
+    image: n8nio/n8n:1.88.0
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      <<: *zona-horaria
+      GENERIC_TIMEZONE: America/Bogota
+      DB_TYPE: postgresdb
+      DB_POSTGRESDB_HOST: postgres
+      DB_POSTGRESDB_PORT: "5432"
+      DB_POSTGRESDB_DATABASE: n8n
+      DB_POSTGRESDB_USER: n8n
+      DB_POSTGRESDB_PASSWORD: ${N8N_DB_PASSWORD}
+      N8N_ENCRYPTION_KEY: ${N8N_ENCRYPTION_KEY:?Defina N8N_ENCRYPTION_KEY en .env}
+      N8N_HOST: ${N8N_HOST:-localhost}
+      WEBHOOK_URL: ${N8N_WEBHOOK_URL:-http://localhost:5678/}
+      N8N_SECURE_COOKIE: ${N8N_SECURE_COOKIE:-false}
+      N8N_DIAGNOSTICS_ENABLED: "false"
+      N8N_PERSONALIZATION_ENABLED: "false"
+      N8N_RUNNERS_ENABLED: "true"
+      # Los workflows leen estas variables con $env (enlaces y remitente de correo)
+      N8N_BLOCK_ENV_ACCESS_IN_NODE: "false"
+      APP_URL: ${APP_URL:-http://localhost:8080}
+      MAIL_FROM: ${MAIL_FROM:-Gastos Hesego <gastos@hesego.test>}
+      N8N_WEBHOOK_TOKEN: ${N8N_WEBHOOK_TOKEN:?Defina N8N_WEBHOOK_TOKEN en .env}
+      # Leídas solo por n8n/importar.sh para crear las credenciales
+      GASTOS_N8N_PASSWORD: ${GASTOS_N8N_PASSWORD}
+      SMTP_HOST: ${SMTP_HOST:-mailpit}
+      SMTP_PORT: ${SMTP_PORT:-1025}
+      SMTP_SECURE: ${SMTP_SECURE:-false}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+    volumes:
+      - n8n_data:/home/node/.n8n
+      # Workflows exportados e importar.sh
+      - ./n8n:/flujo:ro
+    ports:
+      - "${N8N_PORT:-5678}:5678"
+
+  # API (máquina de estados, validaciones, soportes y auditoría). Se conecta con el rol
+  # gastos_app, que no puede editar ni borrar el historial.
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    image: flujo-gastos/api:local
+    restart: unless-stopped
+    depends_on:
+      seed:
+        condition: service_completed_successfully
+      minio-init:
+        condition: service_completed_successfully
+    environment:
+      <<: *zona-horaria
+      NODE_ENV: production
+      PORT: "3000"
+      DATABASE_URL: postgres://gastos_app:${GASTOS_APP_PASSWORD}@postgres:5432/gastos
+      APP_URL: ${APP_URL:-http://localhost:8080}
+      S3_ENDPOINT: http://minio:9000
+      S3_BUCKET: ${S3_BUCKET:-gastos-soportes}
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY}
+      S3_SECRET_KEY: ${S3_SECRET_KEY}
+      N8N_WEBHOOK_BASE: http://n8n:5678/webhook
+      N8N_WEBHOOK_TOKEN: ${N8N_WEBHOOK_TOKEN}
+      SESION_HORAS: ${SESION_HORAS:-10}
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
+    ports:
+      - "${API_PORT:-3000}:3000"
+
+  # Interfaz web (React servido por nginx, que además reenvía /api a la API)
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    image: flujo-gastos/web:local
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - "${WEB_PORT:-8080}:8080"
+
+  # Correo local: atrapa todo lo que envía n8n. Bandeja en http://localhost:8025
+  # En producción, n8n usa la credencial SMTP de Microsoft 365 (ver README).
+  mailpit:
+    image: axllent/mailpit:v1.24.1
+    restart: unless-stopped
+    environment:
+      <<: *zona-horaria
+      MP_SMTP_AUTH_ACCEPT_ANY: "true"
+      MP_SMTP_AUTH_ALLOW_INSECURE: "true"
+    ports:
+      - "${MAILPIT_UI_PORT:-8025}:8025"
+
+volumes:
+  pg_data:
+  minio_data:
+  n8n_data:

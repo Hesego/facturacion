@@ -1,0 +1,38 @@
+{
+  "name": "@gastos/api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/servidor.ts",
+    "build": "esbuild src/servidor.ts --bundle --platform=node --target=node22 --format=esm --packages=external --alias:@gastos/shared=../../packages/shared/src/index.ts --outfile=dist/servidor.js",
+    "start": "node dist/servidor.js",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "demo": "tsx scripts/demo.ts"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "3.758.0",
+    "@fastify/cookie": "11.0.2",
+    "@fastify/multipart": "9.0.3",
+    "@fastify/rate-limit": "10.2.2",
+    "@gastos/shared": "workspace:*",
+    "bcryptjs": "2.4.3",
+    "fastify": "5.2.1",
+    "fflate": "0.8.2",
+    "kysely": "0.27.6",
+    "pg": "8.13.3",
+    "zod": "3.24.2"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "0.3.15",
+    "@electric-sql/pglite-socket": "0.0.20",
+    "@types/bcryptjs": "2.4.6",
+    "@types/node": "22.13.5",
+    "@types/pg": "8.11.11",
+    "esbuild": "0.25.0",
+    "tsx": "4.19.3",
+    "typescript": "5.7.3",
+    "vitest": "3.0.7"
+  }
+}

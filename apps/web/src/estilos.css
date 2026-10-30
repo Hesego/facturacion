@@ -1,0 +1,73 @@
+@import '@fontsource/anton/latin-400.css';
+@import '@fontsource/rajdhani/latin-600.css';
+@import '@fontsource/rajdhani/latin-700.css';
+@import '@fontsource/saira-condensed/latin-800.css';
+
+/* Glacial Indifference: la entrega Comunicaciones en brand/fuentes (ver brand/README.md).
+   Mientras falte, el navegador usa Arial, la sustituta que indica la lámina 13. */
+@font-face {
+  font-family: 'Glacial Indifference';
+  src: url('/brand/fuentes/GlacialIndifference-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Glacial Indifference';
+  src: url('/brand/fuentes/GlacialIndifference-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-display: swap;
+}
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    color-scheme: light;
+  }
+  body {
+    @apply bg-papel font-cuerpo text-tinta antialiased;
+    /* Cuerpo mínimo de 16 px en pantalla (lámina 13) */
+    font-size: 16px;
+    line-height: 1.6;
+  }
+  :focus-visible {
+    @apply outline-none ring-2 ring-teal-profundo ring-offset-2 ring-offset-white;
+  }
+}
+
+@layer components {
+  /* Kicker: Rajdhani en mayúsculas con espaciado (lámina 12) */
+  .kicker {
+    @apply font-etiqueta text-[13px] font-bold uppercase leading-none tracking-kicker text-teal-profundo;
+  }
+  /* Titular: Anton en mayúsculas, interlineado 1,0 (lámina 12) */
+  .titular {
+    @apply font-titular uppercase leading-none tracking-[0.3px] text-tinta;
+  }
+  .cifra {
+    @apply font-cifra font-extrabold leading-[0.9];
+  }
+  .tarjeta {
+    @apply relative overflow-hidden rounded-tarjeta border border-linea bg-white shadow-tarjeta;
+  }
+  /* Barra de acento de 5 px arriba de la tarjeta (lámina 14) */
+  .tarjeta-acento::before {
+    content: '';
+    @apply absolute inset-x-0 top-0 h-[5px] bg-acento-teal;
+  }
+  .tarjeta-acento-naranja::before {
+    content: '';
+    @apply absolute inset-x-0 top-0 h-[5px] bg-acento-naranja;
+  }
+  .campo {
+    @apply block w-full rounded-xl border-[1.5px] border-linea bg-white px-3.5 py-2.5 text-[16px] text-tinta
+      placeholder:text-meta/70 transition-colors
+      focus:border-teal-profundo focus:outline-none focus:ring-2 focus:ring-teal-profundo/20
+      disabled:bg-papel disabled:text-meta;
+  }
+  .campo-error {
+    @apply border-rojo focus:border-rojo focus:ring-rojo/20;
+  }
+}

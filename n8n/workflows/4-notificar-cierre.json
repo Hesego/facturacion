@@ -1,0 +1,436 @@
+{
+  "id": "1tMjh2B80BKDJSZx",
+  "name": "Gastos 4 · Notificar el cierre a los participantes",
+  "active": false,
+  "nodes": [
+    {
+      "id": "bb529863-3ec4-4cf8-a97c-966888fe9320",
+      "name": "Evento del outbox",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "gastos-cierre",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "webhookId": "ec7fe0b1-14be-48a6-a338-4297ef6fe48d"
+    },
+    {
+      "id": "4753a5fc-b560-456a-a63d-236e4927782a",
+      "name": "Preparar mensajes",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// ---------------------------------------------------------------------------\r\n// Funciones comunes de los workflows de notificación (las inyecta n8n/generar.mjs en cada\r\n// nodo Code). n8n NO decide nada del negocio: los destinatarios ya vienen resueltos por la API\r\n// o por la vista v_sla_vencidas. Aquí solo se arma el mensaje.\r\n// ---------------------------------------------------------------------------\r\n\r\nconst APP_URL = String($env.APP_URL || '').replace(/\\/$/, '');\r\n\r\n/** Canales activos. Para sumar Teams, Slack o WhatsApp: agréguelo aquí y configure su rama en el nodo «Canal». */\r\nconst CANALES = ['correo'];\r\n\r\nconst ZONA = 'America/Bogota';\r\nconst cop = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0, maximumFractionDigits: 2 });\r\nconst formatearCOP = (v) => cop.format(Number(v));\r\nconst hoy = () => new Intl.DateTimeFormat('en-CA', { timeZone: ZONA }).format(new Date());\r\n\r\nfunction escapar(texto) {\r\n  return String(texto ?? '').replace(/[&<>\"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '\"': '&quot;', \"'\": '&#39;' }[c]));\r\n}\r\n\r\n/** Rechaza llamadas sin el token compartido con la API. */\r\nfunction validarToken(entrada) {\r\n  const token = entrada.headers && entrada.headers['x-webhook-token'];\r\n  if (!$env.N8N_WEBHOOK_TOKEN || token !== $env.N8N_WEBHOOK_TOKEN) {\r\n    throw new Error('Token de webhook inválido');\r\n  }\r\n}\r\n\r\n/** Personas únicas por correo, sin la que se indique (quien hizo el cambio). */\r\nfunction unicos(personas, excluirEmail) {\r\n  const vistos = new Set();\r\n  const excluir = String(excluirEmail || '').toLowerCase();\r\n  return (personas || []).filter((p) => {\r\n    const e = String(p && p.email || '').toLowerCase();\r\n    if (!e || e === excluir || vistos.has(e)) return false;\r\n    vistos.add(e);\r\n    return true;\r\n  });\r\n}\r\n\r\n/**\r\n * Correo con el sistema visual Hesego (Manual de Marca v1.1). En correo no se pueden incrustar\r\n * las fuentes: se usan las sustitutas de la lámina 13 (Arial Black y Arial).\r\n */\r\nfunction correo({ kicker, titulo, intro, filas = [], cita, citaEtiqueta, tabla, boton, nota }) {\r\n  const fila = ([k, v]) => `\r\n    <tr>\r\n      <td style=\"padding:8px 0;border-bottom:1px solid #E2EAED;font:700 11px/1.4 Arial,sans-serif;letter-spacing:1.5px;text-transform:uppercase;color:#4E646E;width:140px;vertical-align:top\">${escapar(k)}</td>\r\n      <td style=\"padding:8px 0;border-bottom:1px solid #E2EAED;font:15px/1.5 Arial,sans-serif;color:#14313B\">${escapar(v)}</td>\r\n    </tr>`;\r\n  return `<!doctype html>\r\n<html lang=\"es\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>${escapar(titulo)}</title></head>\r\n<body style=\"margin:0;padding:0;background:#F1F5F7\">\r\n<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"background:#F1F5F7;padding:24px 12px\">\r\n<tr><td align=\"center\">\r\n<table role=\"presentation\" width=\"600\" cellpadding=\"0\" cellspacing=\"0\" style=\"max-width:600px;width:100%;background:#FFFFFF;border:1px solid #E2EAED;border-radius:16px;overflow:hidden\">\r\n  <tr><td style=\"background:#0E4A57;background-image:linear-gradient(160deg,#0E4A57,#0A343E);padding:24px 32px\">\r\n    <div style=\"font:700 11px/1 Arial,sans-serif;letter-spacing:3px;text-transform:uppercase;color:#6FD9E6\">Hesego Ingeniería S.A.S.</div>\r\n    <div style=\"margin-top:8px;font:900 20px/1 'Arial Black',Arial,sans-serif;text-transform:uppercase;color:#FFFFFF\">Flujo de gastos</div>\r\n  </td></tr>\r\n  <tr><td style=\"padding:32px 32px 8px\">\r\n    <div style=\"font:700 12px/1 Arial,sans-serif;letter-spacing:2.5px;text-transform:uppercase;color:#0A7D8C\">${escapar(kicker)}</div>\r\n    <h1 style=\"margin:10px 0 0;font:900 26px/1.1 'Arial Black',Arial,sans-serif;text-transform:uppercase;color:#14313B\">${escapar(titulo)}</h1>\r\n    <div style=\"margin-top:14px;width:160px;height:6px;border-radius:3px;background:#FF6B1A;background-image:linear-gradient(90deg,#FF6B1A,#00AEC6)\"></div>\r\n    <p style=\"margin:18px 0 0;font:16px/1.6 Arial,sans-serif;color:#3B565F\">${intro}</p>\r\n  </td></tr>\r\n  ${cita ? `<tr><td style=\"padding:16px 32px 0\">\r\n    <div style=\"border-left:4px solid #0A7D8C;background:#F1F5F7;border-radius:8px;padding:12px 16px\">\r\n      ${citaEtiqueta ? `<div style=\"font:700 11px/1 Arial,sans-serif;letter-spacing:1.5px;text-transform:uppercase;color:#4E646E;margin-bottom:6px\">${escapar(citaEtiqueta)}</div>` : ''}\r\n      <div style=\"font:15px/1.5 Arial,sans-serif;color:#14313B\">${escapar(cita)}</div>\r\n    </div></td></tr>` : ''}\r\n  ${filas.length ? `<tr><td style=\"padding:16px 32px 0\"><table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\">${filas.map(fila).join('')}</table></td></tr>` : ''}\r\n  ${tabla ? `<tr><td style=\"padding:16px 32px 0\">${tabla}</td></tr>` : ''}\r\n  ${boton ? `<tr><td style=\"padding:24px 32px 0\">\r\n    <a href=\"${escapar(boton.url)}\" style=\"display:inline-block;background:#0A7D8C;color:#FFFFFF;text-decoration:none;font:700 16px/1 Arial,sans-serif;padding:14px 24px;border-radius:10px\">${escapar(boton.texto)}</a>\r\n  </td></tr>` : ''}\r\n  <tr><td style=\"padding:28px 32px 28px\">\r\n    ${nota ? `<p style=\"margin:0 0 14px;font:14px/1.5 Arial,sans-serif;color:#4E646E\">${nota}</p>` : ''}\r\n    <div style=\"border-top:1px solid #E2EAED;padding-top:16px;font:700 11px/1.4 Arial,sans-serif;letter-spacing:1.5px;text-transform:uppercase;color:#0A7D8C\">Trabajamos de manera segura, confiable y diligente.</div>\r\n    <div style=\"margin-top:6px;font:12px/1.5 Arial,sans-serif;color:#4E646E\">Mensaje automático de la plataforma de gastos. No respondas este correo.</div>\r\n  </td></tr>\r\n</table>\r\n</td></tr>\r\n</table>\r\n</body></html>`;\r\n}\r\n\r\n/** Datos del gasto que se repiten en los correos (solo lo que se registra aquí: control, no contabilidad). */\r\nfunction filasGasto(t) {\r\n  return [\r\n    ['Factura', (t.facturas || []).join(', ') || '—'],\r\n    ...(t.area ? [['Área', t.area]] : []),\r\n    ...(t.proveedor ? [['Proveedor', t.proveedor]] : []),\r\n    ...(t.valor_formateado ? [['Valor', t.valor_formateado]] : []),\r\n    ...(t.descripcion ? [['Descripción', t.descripcion]] : []),\r\n    ['Solicitante', t.solicitante],\r\n  ];\r\n}\r\n\r\n/**\r\n * Un mensaje por destinatario y canal. La clave de idempotencia evita enviarlo dos veces aunque\r\n * el evento llegue repetido (reintentos del relay).\r\n */\r\nfunction mensajes(personas, { flujo, outboxId, transaccionId, tipo, asunto, html, claveBase }) {\r\n  const salida = [];\r\n  for (const p of personas) {\r\n    for (const canal of CANALES) {\r\n      salida.push({\r\n        json: {\r\n          clave: `${claveBase || outboxId}:${flujo}:${canal}:${String(p.email).toLowerCase()}`,\r\n          outbox_id: outboxId || '',\r\n          transaccion_id: transaccionId ? String(transaccionId) : '',\r\n          tipo,\r\n          canal,\r\n          para: p.email,\r\n          nombre: p.nombre,\r\n          asunto,\r\n          html,\r\n        },\r\n      });\r\n    }\r\n  }\r\n  return salida;\r\n}\r\n\r\n/** Sin destinatarios: un único ítem vacío para que el webhook responda igual. */\r\nconst sinMensajes = () => [{ json: { vacio: true } }];\r\n\n// ---------------------------------------------------------------------------\n// Workflow 4 · Cierre (FT): avisar a todos los que participaron en la transacción.\r\nconst entrada = $input.first().json;\r\nvalidarToken(entrada);\r\nconst e = entrada.body;\r\nconst t = e.transaccion;\r\nconst personas = unicos(e.destinatarios.participantes);\r\nif (!personas.length) return sinMensajes();\r\n\r\nconst html = correo({\r\n  kicker: `${t.consecutivo} · Cierre`,\r\n  titulo: 'Pagado y cerrado',\r\n  intro: 'El gasto completó todo el flujo y quedó <b>pagado</b>. Gracias por tu parte en el proceso.',\r\n  filas: filasGasto(t),\r\n  boton: { texto: 'Ver el historial', url: t.url },\r\n  nota: 'Recibes este aviso porque participaste en alguna etapa de esta transacción.',\r\n});\r\n\r\nreturn mensajes(personas, { flujo: 'cierre', outboxId: e.outbox_id, transaccionId: t.id, tipo: 'cierre', asunto: `[${t.consecutivo}] Gasto pagado y cerrado`, html });\r\n"
+      }
+    },
+    {
+      "id": "f793b981-8aa1-469e-a0fd-9f5597142ba0",
+      "name": "Uno por uno",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        440,
+        0
+      ],
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      }
+    },
+    {
+      "id": "0a6ea882-59ad-4420-a69e-9115d8c3ff16",
+      "name": "¿Hay mensaje?",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        660,
+        160
+      ],
+      "parameters": {
+        "mode": "expression",
+        "numberOutputs": 2,
+        "output": "={{ $json.vacio ? 1 : 0 }}"
+      }
+    },
+    {
+      "id": "3f14afb8-d5f3-4d5d-a53d-b0f8ebfdf6f0",
+      "name": "Reservar envío",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        880,
+        160
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "WITH reserva AS (\n  INSERT INTO notificaciones_log (clave_idempotencia, outbox_evento_id, transaccion_id, tipo, canal, destinatario, asunto, estado, intentos)\n  VALUES ($1, NULLIF($2, '')::uuid, NULLIF($3, '')::bigint, $4, $5::canal_notificacion, $6, $7, 'pendiente', 1)\n  ON CONFLICT (clave_idempotencia) DO UPDATE SET intentos = notificaciones_log.intentos + 1\n  RETURNING id, estado\n)\nSELECT id AS log_id, estado <> 'enviado' AS enviar FROM reserva",
+        "options": {
+          "queryReplacement": "={{ [$json.clave, $json.outbox_id, $json.transaccion_id, $json.tipo, $json.canal, $json.para, $json.asunto] }}"
+        }
+      },
+      "credentials": {
+        "postgres": {
+          "id": "gastosPostgres01",
+          "name": "Postgres Gastos (n8n)"
+        }
+      }
+    },
+    {
+      "id": "78bd5d5f-5fd2-4a82-a147-f8bdb2bb21be",
+      "name": "Combinar",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1100,
+        160
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "return { json: { ...$('Uno por uno').item.json, ...$json } };"
+      }
+    },
+    {
+      "id": "a285188e-13eb-47c6-a493-66c60d21fa2d",
+      "name": "Canal",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        1320,
+        160
+      ],
+      "parameters": {
+        "mode": "expression",
+        "numberOutputs": 5,
+        "output": "={{ $json.enviar ? ['correo', 'teams', 'slack', 'whatsapp'].indexOf($json.canal) : 4 }}"
+      }
+    },
+    {
+      "id": "e69dd5a6-2ceb-42cf-a3a7-6aff51966c2e",
+      "name": "Enviar correo",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        1540,
+        0
+      ],
+      "parameters": {
+        "fromEmail": "={{ $env.MAIL_FROM }}",
+        "toEmail": "={{ $json.para }}",
+        "subject": "={{ $json.asunto }}",
+        "emailFormat": "html",
+        "html": "={{ $json.html }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "credentials": {
+        "smtp": {
+          "id": "gastosSmtp000001",
+          "name": "SMTP Gastos"
+        }
+      }
+    },
+    {
+      "id": "7fe242cd-f690-494a-a9f0-107036d6b713",
+      "name": "Marcar enviado",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        1760,
+        0
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE notificaciones_log SET estado = 'enviado', enviado_en = now(), error = NULL WHERE id = $1",
+        "options": {
+          "queryReplacement": "={{ [$('Combinar').item.json.log_id] }}"
+        }
+      },
+      "credentials": {
+        "postgres": {
+          "id": "gastosPostgres01",
+          "name": "Postgres Gastos (n8n)"
+        }
+      }
+    },
+    {
+      "id": "0695155d-dac5-4eae-a247-b3c1841351b4",
+      "name": "Teams (por configurar)",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        1540,
+        160
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "f1df5774-29c2-4b33-a2fe-961329b1b713",
+      "name": "Slack (por configurar)",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        1540,
+        320
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "34541b48-0816-46b7-a909-846e7ca1eb52",
+      "name": "WhatsApp (por configurar)",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        1540,
+        480
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "fc3ad5fe-dac5-4f43-aabe-e318646d6c0c",
+      "name": "Marcar omitido",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        1760,
+        320
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE notificaciones_log SET estado = 'omitido', error = 'Canal sin configurar' WHERE id = $1",
+        "options": {
+          "queryReplacement": "={{ [$('Combinar').item.json.log_id] }}"
+        }
+      },
+      "credentials": {
+        "postgres": {
+          "id": "gastosPostgres01",
+          "name": "Postgres Gastos (n8n)"
+        }
+      }
+    },
+    {
+      "id": "f52b1225-4494-41d2-a634-b757a69151f1",
+      "name": "Responder",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        660,
+        -160
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { \"ok\": true } }}",
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "Evento del outbox": {
+      "main": [
+        [
+          {
+            "node": "Preparar mensajes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar mensajes": {
+      "main": [
+        [
+          {
+            "node": "Uno por uno",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Uno por uno": {
+      "main": [
+        [
+          {
+            "node": "Responder",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "¿Hay mensaje?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "¿Hay mensaje?": {
+      "main": [
+        [
+          {
+            "node": "Reservar envío",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Uno por uno",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reservar envío": {
+      "main": [
+        [
+          {
+            "node": "Combinar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Combinar": {
+      "main": [
+        [
+          {
+            "node": "Canal",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Canal": {
+      "main": [
+        [
+          {
+            "node": "Enviar correo",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Teams (por configurar)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Slack (por configurar)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "WhatsApp (por configurar)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Uno por uno",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enviar correo": {
+      "main": [
+        [
+          {
+            "node": "Marcar enviado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Marcar enviado": {
+      "main": [
+        [
+          {
+            "node": "Uno por uno",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Teams (por configurar)": {
+      "main": [
+        [
+          {
+            "node": "Marcar omitido",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Slack (por configurar)": {
+      "main": [
+        [
+          {
+            "node": "Marcar omitido",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WhatsApp (por configurar)": {
+      "main": [
+        [
+          {
+            "node": "Marcar omitido",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Marcar omitido": {
+      "main": [
+        [
+          {
+            "node": "Uno por uno",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "America/Bogota",
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "pinData": {},
+  "tags": [],
+  "meta": {
+    "generadoPor": "n8n/generar.mjs"
+  }
+}

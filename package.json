@@ -1,0 +1,15 @@
+{
+  "name": "flujo-gastos",
+  "private": true,
+  "packageManager": "pnpm@9.15.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "demo": "pnpm --parallel --filter @gastos/api --filter @gastos/web demo",
+    "dev:api": "pnpm --filter @gastos/api dev",
+    "test": "pnpm -r test",
+    "typecheck": "pnpm -r typecheck",
+    "build": "pnpm -r build"
+  }
+}

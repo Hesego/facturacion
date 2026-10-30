@@ -1,0 +1,27 @@
+-- Configuración general. ON CONFLICT DO NOTHING: no pisa lo que se haya cambiado desde la administración.
+INSERT INTO configuracion (clave, valor, descripcion) VALUES
+  ('consecutivo_prefijo', '"GTO"',
+   'Prefijo del consecutivo interno de las transacciones (GTO-AAAA-000001)'),
+  ('moneda', '"COP"',
+   'Moneda única de la plataforma: pesos colombianos'),
+  ('zona_horaria', '"America/Bogota"',
+   'Zona horaria para días hábiles, recordatorios y fechas'),
+  ('semaforo', '{"amarillo": 1, "naranja": 2}',
+   'Días hábiles en la etapa desde los que el semáforo pasa a amarillo y a naranja. El rojo (vencida) lo define sla_dias de cada etapa'),
+  ('escalamiento_dias_despues_de_vencer', '0',
+   'Días hábiles después del vencimiento para escalar al líder (0 = el mismo día que vence)'),
+  ('recordatorio_sla_hora', '"07:00"',
+   'Hora del recordatorio diario de SLA (workflow de n8n)'),
+  ('adjuntos_tamano_max_mb', '25',
+   'Tamaño máximo por archivo adjunto'),
+  ('adjuntos_tipos_permitidos', '["application/pdf", "image/png", "image/jpeg", "application/xml", "text/xml", "application/zip"]',
+   'Tipos de archivo aceptados como soporte (el XML y el ZIP son los de la factura electrónica)'),
+  ('equipos_pueden_anular', '["contabilidad", "administrador"]',
+   'Equipos cuyos miembros pueden anular una transacción en curso (con motivo obligatorio)'),
+  ('equipos_gestionan_facturas', '["contabilidad"]',
+   'Equipos que registran e inactivan facturas en cualquier etapa en curso'),
+  ('equipos_pueden_reasignar', '["contabilidad", "administrador"]',
+   'Equipos que pueden reasignar una transacción a otra persona del mismo equipo (vacaciones, ausencias). La persona asignada siempre puede.'),
+  ('equipos_seguimiento', '["contabilidad"]',
+   'Equipos que reciben aviso de cada cambio relevante, además del solicitante (contabilidad es dueña del proceso)')
+ON CONFLICT (clave) DO NOTHING;
