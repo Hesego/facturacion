@@ -2,7 +2,7 @@
 # Reemplaza a los servicios migrate, seed y minio-init del docker-compose local.
 # Se construye desde la raíz del repo.
 FROM amacneil/dbmate:2.19.0 AS dbmate
-FROM minio/mc:RELEASE.2025-04-16T18-13-26Z AS mc
+FROM pgsty/mc:RELEASE.2026-09-16T00-00-00Z AS mc
 
 FROM postgres:16.4-alpine
 COPY --from=dbmate /usr/local/bin/dbmate /usr/local/bin/dbmate

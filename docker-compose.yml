@@ -1,5 +1,6 @@
 # Plataforma de gestión del ciclo de vida de gastos · Hesego Ingeniería S.A.S.
 # Todas las imágenes vienen de Docker Hub y van con versión fija.
+# MinIO usa el fork comunitario pgsty/*: MinIO retiró sus imágenes oficiales de Docker Hub.
 # Uso: cp .env.example .env  (y cambiar las claves)  →  docker compose up -d
 #
 # Fase 3: base de datos, migraciones, semillas, almacenamiento, n8n, correo local, API e interfaz.
@@ -73,7 +74,7 @@ services:
     restart: "no"
 
   minio:
-    image: minio/minio:RELEASE.2025-04-22T22-12-26Z
+    image: pgsty/minio:RELEASE.2026-08-04T00-00-00Z
     restart: unless-stopped
     command: ["server", "/data", "--console-address", ":9001"]
     environment:
@@ -93,7 +94,7 @@ services:
 
   # Crea el bucket privado y el usuario de la aplicación con acceso solo a ese bucket.
   minio-init:
-    image: minio/mc:RELEASE.2025-04-16T18-13-26Z
+    image: pgsty/mc:RELEASE.2026-09-16T00-00-00Z
     depends_on:
       minio:
         condition: service_healthy
