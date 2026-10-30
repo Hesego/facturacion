@@ -4,6 +4,10 @@
 #   demo/  áreas, usuarios y proveedores de prueba (solo con SEED_DEMO=true)
 set -eu
 
+# Sin estos datos el administrador se crearía sin poder iniciar sesión (y la semilla no lo vuelve a tocar)
+: "${ADMIN_EMAIL:?Defina ADMIN_EMAIL}"
+: "${ADMIN_PASSWORD:?Defina ADMIN_PASSWORD}"
+
 aplicar() {
   for archivo in "$1"/*.sql; do
     echo "→ $archivo"
