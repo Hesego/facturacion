@@ -115,6 +115,25 @@ function filasGasto(t) {
   ];
 }
 
+const fechaHora = new Intl.DateTimeFormat('es-CO', { timeZone: ZONA, day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' });
+
+/**
+ * Historial de observaciones de los pasos anteriores (sin la última, que va destacada arriba).
+ * Es la trazabilidad: quién escribió qué, en qué etapa y cuándo.
+ */
+function tablaObservaciones(observaciones) {
+  const previas = (observaciones || []).slice(0, -1);
+  if (!previas.length) return '';
+  const etiqueta = { devuelta: 'Devolución', reasignada: 'Reasignación', anulada: 'Anulación', comentario: 'Comentario' };
+  const filas = previas.map((o) => `
+    <tr><td style="padding:10px 0;border-bottom:1px solid #E2EAED">
+      <div style="font:700 11px/1.4 Arial,sans-serif;letter-spacing:1.5px;text-transform:uppercase;color:#4E646E">${escapar(o.actor || 'Sistema')} · ${escapar(o.etapa || '')}${etiqueta[o.tipo] ? ` · ${etiqueta[o.tipo]}` : ''} · ${escapar(fechaHora.format(new Date(o.fecha)))}</div>
+      <div style="margin-top:4px;font:15px/1.5 Arial,sans-serif;color:#14313B">${escapar(o.texto)}</div>
+    </td></tr>`).join('');
+  return `<div style="font:700 12px/1 Arial,sans-serif;letter-spacing:2.5px;text-transform:uppercase;color:#0A7D8C;margin:8px 0 4px">Observaciones anteriores</div>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0">${filas}</table>`;
+}
+
 /**
  * Un mensaje por destinatario y canal. La clave de idempotencia evita enviarlo dos veces aunque
  * el evento llegue repetido (reintentos del relay).

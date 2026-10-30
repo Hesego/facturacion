@@ -35,6 +35,10 @@ const evento = (o = {}) => ({
   actor: { nombre: 'Carolina Ruiz', email: 'contabilidad1@hesego.test' },
   motivo: null,
   comentario: null,
+  observaciones: [
+    { fecha: '2026-10-28T14:00:00Z', actor: 'Carolina Ruiz', etapa: 'Solicitud de gasto', tipo: 'avanzada', texto: 'Favor montar el RQ <urgente>' },
+    { fecha: '2026-10-29T15:00:00Z', actor: 'Carolina Ruiz', etapa: 'Solicitud de gasto', tipo: 'avanzada', texto: 'Con prioridad' },
+  ],
   destinatarios: {
     responsables: [persona('ops.sst@hesego.test', 'Julián Ortiz')],
     seguimiento: [persona('contabilidad2@hesego.test', 'Andrés Mejía'), persona('doble.rol@hesego.test', 'Camilo Torres')],
@@ -100,6 +104,9 @@ describe('1 · Equipo responsable', () => {
     assert.match(m.html, /FE-4101/);
     assert.match(m.html, /Seguridad y salud en el trabajo/);
     assert.match(m.html, /&lt;para&gt;/, 'la descripción debe ir escapada');
+    assert.match(m.html, /Observación de Carolina Ruiz/, 'la observación del actor anterior va destacada');
+    assert.match(m.html, /Observaciones anteriores[\s\S]*Favor montar el RQ &lt;urgente&gt;/, 'el historial lleva las anteriores, escapadas');
+    assert.equal((m.html.match(/Con prioridad/g) || []).length, 1, 'la última no se repite en el historial');
     assert.match(m.html, /href="http:\/\/localhost:8080\/transacciones\/12"/);
     guardar('1-nueva-etapa', m.html);
   });

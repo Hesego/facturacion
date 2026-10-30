@@ -22,8 +22,9 @@ const html = correo({
       ? `<b>${escapar(e.actor.nombre)}</b> devolvió la transacción desde <b>${escapar(e.etapa_origen.nombre)}</b> a <b>${escapar(destino.nombre)}</b>. Revisa el motivo, corrige y vuelve a enviarla.`
       : `<b>${escapar(e.actor.nombre)}</b> completó <b>${escapar(e.etapa_origen.nombre)}</b> y te la envió. Te corresponde la etapa <b>${escapar(destino.nombre)}</b>. El plazo es de ${sla}.`,
   cita: reasignada || devuelta ? e.motivo : e.comentario,
-  citaEtiqueta: reasignada || devuelta ? 'Motivo' : 'Comentario',
+  citaEtiqueta: `${reasignada || devuelta ? 'Motivo' : 'Observación'} de ${e.actor.nombre}`,
   filas: filasGasto(t),
+  tabla: tablaObservaciones(e.observaciones),
   boton: { texto: 'Revisar la solicitud', url: t.url },
   nota: `Si respondes este correo, la respuesta le llega a ${escapar(e.actor.nombre)}.`,
 });

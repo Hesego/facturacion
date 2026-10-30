@@ -105,7 +105,7 @@ describe('Facturas adicionales y antes del pago', () => {
   it('el envío a aprobación de pago exige al menos una factura activa', async () => {
     const t = await llevarHasta(ctx, (await nueva(ctx)).id, 'PG_ENV');
     for (const f of await facturasDe(t.id)) await inactivarFactura(ctx, await contabilidad(), f.id, 'error_registro');
-    await expect(avanzar(ctx, await contabilidad(), t.id, { version: t.version, asignarA: await idUsuario(ctx, 'gfinanciera1@hesego.test') }))
+    await expect(avanzar(ctx, await contabilidad(), t.id, { version: t.version, comentario: 'Listo para revisión', asignarA: await idUsuario(ctx, 'gfinanciera1@hesego.test') }))
       .rejects.toMatchObject({ codigo: 'REQUISITOS_INCOMPLETOS', detalles: [expect.objectContaining({ clave: 'facturas:min' })] });
   });
 });

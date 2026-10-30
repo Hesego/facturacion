@@ -17,6 +17,7 @@ Registro de lo acordado antes de construir. Si una decisión cambia, se actualiz
 | 7 | Correo y acceso | Producción con **Gmail** (SMTP `smtp.gmail.com:587`, contraseña de aplicación); cada correo muestra a quien hizo el paso y le dirige las respuestas (Reply-To). El asunto es el que escribe el solicitante. El esquema de usuarios queda listo para iniciar sesión con Microsoft (Entra ID) más adelante. |
 | 8 | Activos de marca | Aún no hay archivos maestros. El código define las rutas esperadas en `brand/` y usa un marcador de texto mientras tanto. **Nunca se redibuja el logo** (Manual de Marca v1.1, lámina 9). |
 | 9 | Moneda | Solo pesos colombianos (COP). |
+| 10 | Trazabilidad entre actores | Toda etapa que ejecuta una persona exige una **observación** al completarla (antes solo las aprobaciones). La persona que recibe la ve destacada al abrir la tarea y en su bandeja, y el correo la trae arriba con el historial de observaciones anteriores debajo (quién, etapa, fecha). |
 
 ## Propuestas aplicadas por defecto (sin objeción)
 

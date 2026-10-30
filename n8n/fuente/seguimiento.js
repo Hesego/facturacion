@@ -34,8 +34,9 @@ const html = correo({
   titulo,
   intro,
   cita: anulada || devuelta ? e.motivo : e.comentario,
-  citaEtiqueta: anulada || devuelta ? 'Motivo' : 'Comentario',
+  citaEtiqueta: `${anulada || devuelta ? 'Motivo' : 'Observación'} de ${e.actor.nombre}`,
   filas: filasGasto(t),
+  tabla: tablaObservaciones(e.observaciones),
   boton: { texto: 'Ver la transacción', url: t.url },
   nota: 'Recibes este aviso porque solicitaste el gasto o perteneces a contabilidad, dueña del proceso.',
 });

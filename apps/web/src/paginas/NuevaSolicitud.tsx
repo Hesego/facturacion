@@ -41,7 +41,7 @@ export function NuevaSolicitud() {
   const enviar = async () => {
     setIntentado(true);
     setError(null);
-    if (facturasIncompletas || !descripcion.trim() || !siguiente || destinoIncompleto(para, siguiente.areas)) return;
+    if (facturasIncompletas || !descripcion.trim() || comentario.trim().length < 3 || !siguiente || destinoIncompleto(para, siguiente.areas)) return;
     setEnviando(true);
     try {
       const { archivos, campos } = archivosFacturas(facturas);
@@ -86,6 +86,13 @@ export function NuevaSolicitud() {
               valor={para} alCambiar={setPara} intentado={intentado} />
           )}
 
+          <Campo etiqueta="Observación para quien la recibe" id="comentario" requerido
+            error={intentado && comentario.trim().length < 3 ? 'Escribe tu observación' : undefined}
+            ayuda="Le llega en el correo y la ve al abrir la tarea. Queda en el historial.">
+            <AreaTexto id="comentario" value={comentario} onChange={(e) => setComentario(e.target.value)} className="min-h-[72px]"
+              invalido={intentado && comentario.trim().length < 3} placeholder="Qué debe revisar o hacer con esta solicitud" />
+          </Campo>
+
           <div>
             <button type="button" onClick={() => setMas((v) => !v)} aria-expanded={mas}
               className="flex items-center gap-1.5 font-etiqueta text-[14px] font-bold uppercase tracking-chip text-teal-profundo">
@@ -95,9 +102,6 @@ export function NuevaSolicitud() {
               <div className="mt-4 space-y-5">
                 <Campo etiqueta="Valor" id="valor" ayuda={/^\d+(\.\d{1,2})?$/.test(valorNormal) && Number(valorNormal) > 0 ? formatearCOP(valorNormal) : 'Si vienen los XML, es la suma de las facturas'}>
                   <Entrada id="valor" inputMode="decimal" value={valor} onChange={(e) => setValor(e.target.value)} placeholder="1.500.000" />
-                </Campo>
-                <Campo etiqueta="Comentario para quien la recibe" id="comentario" ayuda="Va en el cuerpo del correo.">
-                  <AreaTexto id="comentario" value={comentario} onChange={(e) => setComentario(e.target.value)} className="min-h-[72px]" />
                 </Campo>
               </div>
             )}

@@ -5,7 +5,7 @@ import type { BD } from '../db/conexion.js';
 import { areasEtapa, esResponsable, miembrosEtapa, perteneceA, type Actor } from './autorizacion.js';
 import { ErrorNegocio } from './errores.js';
 import { bloqueoPorSegregacion, obtenerEtapa, personaDevolucion, siguienteEtapa } from './flujo.js';
-import { evaluarRequisitos, leerRequisitos } from './requisitos.js';
+import { evaluarRequisitos, leerRequisitos, observacionObligatoria } from './requisitos.js';
 
 const COLUMNAS_EN_CURSO = [
   'v.id', 'v.consecutivo', 'v.valor', 'v.descripcion', 'v.facturas', 'v.asignado_a', 'v.asignado_nombre', 'v.area_id', 'v.area_nombre',
@@ -15,7 +15,15 @@ const COLUMNAS_EN_CURSO = [
 
 /** Bandeja «Mis pendientes»: lo que está asignado al usuario. */
 export async function pendientes(db: BD, actor: Actor) {
-  return db.selectFrom('v_transacciones_en_curso as v').select([...COLUMNAS_EN_CURSO])
+  return db.selectFrom('v_transacciones_en_curso as v').select([...COLUMNAS_EN_CURSO,
+    // Lo último que dejó escrito quien se la envió, devolvió o reasignó
+    (eb) => eb.selectFrom('eventos as ev').select(sql<string>`coalesce(ev.motivo, ev.datos->>'comentario')`.as('o'))
+      .whereRef('ev.transaccion_id', '=', 'v.id').where('ev.tipo', 'in', ['avanzada', 'devuelta', 'reasignada'])
+      .orderBy('ev.id', 'desc').limit(1).as('ultima_observacion'),
+    (eb) => eb.selectFrom('eventos as ev').innerJoin('usuarios as u', 'u.id', 'ev.actor_id').select('u.nombre')
+      .whereRef('ev.transaccion_id', '=', 'v.id').where('ev.tipo', 'in', ['avanzada', 'devuelta', 'reasignada'])
+      .orderBy('ev.id', 'desc').limit(1).as('ultima_observacion_de'),
+  ])
     .where('v.asignado_a', '=', actor.id)
     .orderBy('v.dias_habiles_en_etapa', 'desc').orderBy('v.en_etapa_desde', 'asc')
     .execute();
@@ -128,7 +136,7 @@ export async function detalleTransaccion(db: BD, actor: Actor, id: number) {
       // En aprobación se habla de aprobar / rechazar (decisión 1)
       etiquetaAvanzar: etapa.tipo === 'aprobacion' ? 'Aprobar' : siguiente?.tipo === 'sistema' ? 'Registrar y cerrar' : 'Enviar',
       etiquetaDevolver: etapa.tipo === 'aprobacion' ? 'Rechazar' : 'Devolver',
-      comentarioObligatorio: req?.comentario_obligatorio ?? false,
+      comentarioObligatorio: actuable && observacionObligatoria(etapa),
       bloqueoSegregacion: segregacion ? `Ejecutaste la etapa ${segregacion}; por segregación de funciones otra persona debe continuar.` : null,
       destino,
       devolverA: devolucion ? { etapa: devolucion.nombre, persona: (await personaDevolucion(db, t, devolucion))?.nombre ?? null } : null,

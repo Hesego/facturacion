@@ -77,7 +77,7 @@ describe('Flujo por HTTP', () => {
     expect(rq.miembros.map((m: any) => m.email)).toEqual(expect.arrayContaining(['ops.sst@hesego.test', 'ops.tics@hesego.test']));
 
     const para = await idUsuario(ctx, 'ops.tics@hesego.test');
-    const r = await enviar('/api/transacciones', contab, { asignarA: para, descripcion: 'Licencias de ofimática' }, [zipFactura({ numero: 'TIC-4410', valor: '3200000.50' })]);
+    const r = await enviar('/api/transacciones', contab, { asignarA: para, descripcion: 'Licencias de ofimática', comentario: 'Renovación anual' }, [zipFactura({ numero: 'TIC-4410', valor: '3200000.50' })]);
     expect(r.statusCode, r.body).toBe(201);
     const t = r.json();
     expect(t).toMatchObject({ valor: '3200000.50', asignado_a: para });
@@ -91,7 +91,7 @@ describe('Flujo por HTTP', () => {
   it('varias facturas y un pantallazo en el mismo formulario (factura_<i>, numero_<i>, soporte)', async () => {
     const contab = await sesion('contabilidad1@hesego.test');
     const png = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 7, 7]);
-    const r = await enviar('/api/transacciones', contab, { asignarA: await idUsuario(ctx, 'ops.sst@hesego.test'), numero_0: 'HT-1', numero_1: 'HT-2' }, [
+    const r = await enviar('/api/transacciones', contab, { asignarA: await idUsuario(ctx, 'ops.sst@hesego.test'), numero_0: 'HT-1', numero_1: 'HT-2', comentario: 'Dos facturas del mismo pedido' }, [
       { ...pdf('HT-1.pdf'), campo: 'factura_0' },
       { ...pdf('HT-2.pdf'), campo: 'factura_1' },
       { nombre: 'pantallazo.png', mime: 'image/png', contenido: png, campo: 'soporte' },
@@ -115,7 +115,7 @@ describe('Flujo por HTTP', () => {
     expect(d.acciones.destino.areas.map((a: any) => [a.codigo, a.miembros.map((m: any) => m.email)])).toEqual([
       ['INVENTARIO', ['lider.inventario@hesego.test']], ['SST', ['lider.sst@hesego.test']], ['TICS', ['lider.tics@hesego.test']],
     ]);
-    expect(d.requisitos.map((r: any) => [r.clave, r.cumple])).toEqual([['referencia:RQ', false], ['adjunto:pantallazo_operacion', false]]);
+    expect(d.requisitos.map((r: any) => [r.clave, r.cumple])).toEqual([['referencia:RQ', false], ['adjunto:pantallazo_operacion', false], ['comentario', false]]);
 
     const contab = (await app.inject({ method: 'GET', url: `/api/transacciones/${t.id}`, headers: await sesion('contabilidad1@hesego.test') })).json();
     expect(contab.acciones).toMatchObject({ avanzar: false, devolver: false, anular: true, registrarFacturas: true, reasignar: true });
@@ -126,7 +126,7 @@ describe('Flujo por HTTP', () => {
     const s = await sesion('ops.sst@hesego.test');
     const contenido = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 1, 2, 3]);
     const r = await enviar(`/api/transacciones/${t.id}/avanzar`, s,
-      { version: t.version, numero: 'RQ-88001', asignarA: await idUsuario(ctx, 'lider.sst@hesego.test') },
+      { version: t.version, comentario: 'Listo para revisión', numero: 'RQ-88001', asignarA: await idUsuario(ctx, 'lider.sst@hesego.test') },
       [{ nombre: 'operación ñ.png', mime: 'image/png', contenido }]);
     expect(r.statusCode, r.body).toBe(200);
     expect(r.json().asignado_a).toBe(await idUsuario(ctx, 'lider.sst@hesego.test'));

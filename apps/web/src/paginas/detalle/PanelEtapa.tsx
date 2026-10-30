@@ -132,8 +132,9 @@ export function PanelEtapa({ d, alAvisar }: { d: Detalle; alAvisar: (texto: stri
             <SelectorDestino etiqueta={`Enviar a · ${siguiente.nombre}`} areas={acciones.destino.areas} miembros={acciones.destino.miembros}
               valor={para} alCambiar={setPara} intentado={intentado} />
           )}
-          <Campo etiqueta={esAprobacion ? 'Comentario de la aprobación' : 'Comentario'} id="comentario" requerido={acciones.comentarioObligatorio}
-            error={intentado && faltaComentario ? 'Escribe un comentario' : undefined} ayuda={acciones.comentarioObligatorio ? undefined : 'Opcional'}>
+          <Campo etiqueta={esAprobacion ? 'Comentario de la aprobación' : 'Tu observación para quien la recibe'} id="comentario" requerido={acciones.comentarioObligatorio}
+            error={intentado && faltaComentario ? 'Escribe tu observación' : undefined}
+            ayuda={cierra ? 'Queda en el historial de la transacción.' : 'Le llega en el correo y la ve al abrir la tarea. Queda en el historial.'}>
             <AreaTexto id="comentario" className="min-h-[72px]" value={comentario} onChange={(e) => setComentario(e.target.value)} invalido={intentado && faltaComentario} />
           </Campo>
           {avanzar.error && <Alerta tono="error">{(avanzar.error as ErrorApi).message}</Alerta>}

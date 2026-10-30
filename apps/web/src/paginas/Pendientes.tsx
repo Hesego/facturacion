@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { CheckCircle2, ChevronRight } from 'lucide-react';
+import { CheckCircle2, ChevronRight, MessageSquare } from 'lucide-react';
 import { usePendientes, useYo } from '../api/consultas';
 import type { Pendiente, Semaforo as TSemaforo } from '../api/tipos';
 import { ChipEtapa, Semaforo } from '../componentes/marca';
@@ -14,7 +14,7 @@ const FILTROS: { clave: 'todas' | TSemaforo | 'por_vencer'; etiqueta: string; in
   { clave: 'verde', etiqueta: 'A tiempo', incluye: (p) => p.semaforo === 'verde' },
 ];
 
-export function FilaTransaccion({ p }: { p: Pick<Pendiente, 'id' | 'consecutivo' | 'descripcion' | 'facturas' | 'asignado_nombre' | 'area_nombre' | 'valor' | 'etapa_codigo' | 'etapa_nombre'> & { semaforo?: TSemaforo | null; dias?: number | null; estado?: string } }) {
+export function FilaTransaccion({ p }: { p: Pick<Pendiente, 'id' | 'consecutivo' | 'descripcion' | 'facturas' | 'asignado_nombre' | 'area_nombre' | 'valor' | 'etapa_codigo' | 'etapa_nombre' | 'ultima_observacion' | 'ultima_observacion_de'> & { semaforo?: TSemaforo | null; dias?: number | null; estado?: string } }) {
   const cerrada = p.estado && p.estado !== 'en_curso';
   const detalle = [p.facturas && `Factura ${p.facturas}`, !cerrada && p.asignado_nombre && `a cargo de ${p.asignado_nombre}${p.area_nombre ? ` (${p.area_nombre})` : ''}`].filter(Boolean).join(' · ');
   return (
@@ -28,6 +28,12 @@ export function FilaTransaccion({ p }: { p: Pick<Pendiente, 'id' | 'consecutivo'
           </p>
           <p className="mt-0.5 truncate font-bold text-tinta">{p.descripcion ?? (p.facturas ? `Factura ${p.facturas}` : 'Sin descripción')}</p>
           {detalle && <p className="truncate text-[14px] text-meta">{detalle}</p>}
+          {p.ultima_observacion && (
+            <p className="mt-1 truncate text-[14px] text-secundario">
+              <MessageSquare className="mr-1 inline h-3.5 w-3.5 align-[-2px] text-teal-profundo" strokeWidth={2} />
+              <b className="text-tinta">{p.ultima_observacion_de}:</b> {p.ultima_observacion}
+            </p>
+          )}
         </div>
         <div className="hidden shrink-0 flex-col items-end gap-1.5 sm:flex">
           {p.valor && <p className="font-bold tabular-nums text-tinta">{formatearCOP(p.valor)}</p>}

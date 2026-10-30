@@ -25,6 +25,30 @@ async function seguimiento(trx: Trx, t: Transaccion, excluirId: number | null): 
   return filas.filter((p) => p.id !== excluirId);
 }
 
+/**
+ * Observaciones de cada paso, en orden: lo que escribió quien envió (comentario), devolvió,
+ * reasignó o anuló (motivo), y los comentarios sueltos. Es la trazabilidad que viaja en el correo.
+ */
+async function observaciones(trx: Trx, transaccionId: number) {
+  const [eventos, comentarios] = await Promise.all([
+    trx.selectFrom('eventos as ev')
+      .leftJoin('usuarios as u', 'u.id', 'ev.actor_id')
+      .leftJoin('catalogo_etapas as o', 'o.id', 'ev.etapa_origen_id')
+      .select(['ev.id', 'ev.tipo', 'ev.ocurrido_en', 'u.nombre as actor', 'o.nombre as etapa',
+        sql<string | null>`coalesce(ev.motivo, ev.datos->>'comentario')`.as('texto')])
+      .where('ev.transaccion_id', '=', transaccionId)
+      .where('ev.tipo', 'in', ['avanzada', 'devuelta', 'reasignada', 'anulada'])
+      .orderBy('ev.id').execute(),
+    trx.selectFrom('comentarios as c').innerJoin('usuarios as u', 'u.id', 'c.autor_id').innerJoin('catalogo_etapas as e', 'e.id', 'c.etapa_id')
+      .select(['c.creado_en', 'c.texto', 'u.nombre as actor', 'e.nombre as etapa'])
+      .where('c.transaccion_id', '=', transaccionId).orderBy('c.id').execute(),
+  ]);
+  return [
+    ...eventos.filter((e) => e.texto?.trim()).map((e) => ({ fecha: new Date(e.ocurrido_en).toISOString(), actor: e.actor, etapa: e.etapa, tipo: e.tipo, texto: e.texto })),
+    ...comentarios.map((c) => ({ fecha: new Date(c.creado_en).toISOString(), actor: c.actor, etapa: c.etapa, tipo: 'comentario', texto: c.texto })),
+  ].sort((a, b) => a.fecha.localeCompare(b.fecha));
+}
+
 /** Todos los que actuaron en la transacción, más el solicitante. */
 async function participantes(trx: Trx, t: Transaccion): Promise<Persona[]> {
   return trx
@@ -87,6 +111,8 @@ export async function emitirOutbox(trx: Trx, d: DatosEmision): Promise<void> {
     actor: d.actor && { nombre: d.actor.nombre, email: d.actor.email },
     motivo: d.motivo ?? null,
     comentario: d.comentario ?? null,
+    // Todas las observaciones hasta este paso (incluido), de la más antigua a la más reciente
+    observaciones: await observaciones(trx, d.t.id),
     destinatarios: {
       // La persona a la que se le asignó la transacción (vacío en cierre y anulación)
       responsables: !cierre && asignado ? [asignado] : [],

@@ -42,6 +42,9 @@ export interface Pendiente {
   vencida: boolean;
   version: number;
   creado_en: string;
+  /** Lo último que escribió quien la envió, devolvió o reasignó (solo en «Mis pendientes»). */
+  ultima_observacion?: string | null;
+  ultima_observacion_de?: string | null;
 }
 
 export interface FilaListado {

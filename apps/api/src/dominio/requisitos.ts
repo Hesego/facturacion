@@ -11,6 +11,11 @@ export function leerRequisitos(etapa: Etapa): RequisitosEtapa {
   return r.data;
 }
 
+/** Toda etapa que ejecuta una persona exige observación al completarla (las del sistema no). */
+export function observacionObligatoria(etapa: Etapa): boolean {
+  return etapa.tipo !== 'sistema' || leerRequisitos(etapa).comentario_obligatorio;
+}
+
 /**
  * Lista de verificación de una etapa: qué exige y si ya se cumple. La usa `avanzar` para
  * bloquear y el detalle de la transacción para mostrar qué falta.
@@ -52,8 +57,9 @@ export async function evaluarRequisitos(db: BD | Trx, t: Transaccion, etapa: Eta
       cumple: n >= req.facturas.min, detalle: `${n} registrada(s)` });
   }
 
-  if (req.comentario_obligatorio) {
-    items.push({ clave: 'comentario', descripcion: etapa.tipo === 'aprobacion' ? 'Comentario de la aprobación' : 'Comentario',
+  // Trazabilidad: quien completa una etapa siempre deja su observación para la siguiente persona
+  if (observacionObligatoria(etapa)) {
+    items.push({ clave: 'comentario', descripcion: etapa.tipo === 'aprobacion' ? 'Comentario de la aprobación' : 'Observación para quien la recibe',
       cumple: (comentario ?? '').trim().length >= 3 });
   }
   return items;

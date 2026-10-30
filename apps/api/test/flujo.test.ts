@@ -65,7 +65,7 @@ describe('Transiciones inválidas', () => {
   it('una etapa acepta varios documentos y soportes adicionales en el mismo envío', async () => {
     const t = await nueva(ctx);
     const r = await avanzar(ctx, await actor(ctx, 'ops.sst@hesego.test'), t.id,
-      { version: t.version, numero: numero('RQ'), asignarA: await idUsuario(ctx, 'lider.sst@hesego.test') },
+      { version: t.version, comentario: 'Listo para revisión', numero: numero('RQ'), asignarA: await idUsuario(ctx, 'lider.sst@hesego.test') },
       [pdf('pantallazo-1.pdf'), pdf('pantallazo-2.pdf')], [pdf('correo-del-proveedor.pdf')]);
     expect(await codigoEtapa(ctx, r)).toBe('AP');
     const adjuntos = await ctx.db.selectFrom('adjuntos').select(['tipo', 'nombre_original']).where('transaccion_id', '=', t.id)
@@ -80,7 +80,7 @@ describe('Transiciones inválidas', () => {
   it('hay que elegir a quién se envía, y debe ser del equipo de la etapa siguiente', async () => {
     const t = await nueva(ctx);
     const ops = await actor(ctx, 'ops.sst@hesego.test');
-    const base = { version: t.version, numero: numero('RQ') };
+    const base = { version: t.version, comentario: 'Listo para revisión', numero: numero('RQ') };
     await expect(avanzar(ctx, ops, t.id, base, [pdf()])).rejects.toMatchObject({ codigo: 'DATOS_INVALIDOS', message: expect.stringContaining('Elige a la persona') });
     await expect(avanzar(ctx, ops, t.id, { ...base, asignarA: await idUsuario(ctx, 'compras1@hesego.test') }, [pdf()]))
       .rejects.toMatchObject({ codigo: 'DATOS_INVALIDOS', message: expect.stringContaining('Líderes de operaciones') });
@@ -120,7 +120,7 @@ describe('Devoluciones', () => {
     expect(ev).toMatchObject({ motivo: 'El pantallazo no es legible', datos: { decision: 'rechazado', asignado: 'Natalia Gómez' } });
 
     // El número y el documento siguen ahí: basta con reenviar
-    const otraVez = await avanzar(ctx, await actor(ctx, 'ops.tics@hesego.test'), t.id, { version: r.version, asignarA: await idUsuario(ctx, 'lider.tics@hesego.test') });
+    const otraVez = await avanzar(ctx, await actor(ctx, 'ops.tics@hesego.test'), t.id, { version: r.version, comentario: 'Corregido el pantallazo', asignarA: await idUsuario(ctx, 'lider.tics@hesego.test') });
     expect(await codigoEtapa(ctx, otraVez)).toBe('AP');
   });
 
@@ -176,7 +176,7 @@ describe('Anulación', () => {
     await anular(ctx, await actor(ctx, 'contabilidad1@hesego.test'), t.id, { version: t.version, motivo: 'RQ asignado a otro gasto' });
     const otra = await nueva(ctx);
     const r = await avanzar(ctx, await actor(ctx, 'ops.sst@hesego.test'), otra.id,
-      { version: otra.version, numero: rq.numero, asignarA: await idUsuario(ctx, 'lider.sst@hesego.test') }, [pdf()]);
+      { version: otra.version, comentario: 'Listo para revisión', numero: rq.numero, asignarA: await idUsuario(ctx, 'lider.sst@hesego.test') }, [pdf()]);
     expect(await codigoEtapa(ctx, r)).toBe('AP');
   });
 });

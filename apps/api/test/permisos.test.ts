@@ -50,8 +50,8 @@ describe('Segregación de funciones (regla 5)', () => {
   it('quien envía una aprobación no puede elegirse a sí mismo como aprobador', async () => {
     const t = await llevarHasta(ctx, (await nueva(ctx)).id, 'PG_ENV', { PG_ENV: 'doble.rol@hesego.test' });
     const doble = await actor(ctx, 'doble.rol@hesego.test');
-    await expect(avanzar(ctx, doble, t.id, { version: t.version, asignarA: doble.id })).rejects.toMatchObject({ codigo: 'SEGREGACION' });
-    const ok = await avanzar(ctx, doble, t.id, { version: t.version, asignarA: await idUsuario(ctx, 'gfinanciera1@hesego.test') });
+    await expect(avanzar(ctx, doble, t.id, { version: t.version, comentario: 'Listo para revisión', asignarA: doble.id })).rejects.toMatchObject({ codigo: 'SEGREGACION' });
+    const ok = await avanzar(ctx, doble, t.id, { version: t.version, comentario: 'Listo para revisión', asignarA: await idUsuario(ctx, 'gfinanciera1@hesego.test') });
     expect(ok.version).toBe(t.version + 1);
   });
 

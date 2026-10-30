@@ -79,7 +79,7 @@ Gmail solo deja enviar desde la cuenta autenticada, así que cada correo sale de
 - **De:** `"Pepito Pérez vía Gastos Hesego" <cuenta@gmail.com>`
 - **Responder a:** `pepito@hesegoingenieria.com`
 - **Asunto:** el que escribió el solicitante en la solicitud, con el consecutivo: `Botas dieléctricas cuadrilla Jamundí [GTO-2026-000012]`. En devoluciones y reasignaciones se antepone `Devuelto:` o `Reasignado:`.
-- **Cuerpo:** etapa, comentario o motivo, datos del gasto y el botón **Revisar la solicitud** con el enlace a la transacción.
+- **Cuerpo:** la observación (o el motivo) de quien hizo el paso, destacada; debajo, las **observaciones anteriores** de cada paso (quién, etapa y fecha; llegan resueltas en `observaciones` del evento); los datos del gasto y el botón **Revisar la solicitud** con el enlace a la transacción.
 
 Gmail tiene un límite de unos 500 destinatarios al día por cuenta. En Portainer, `fact-n8n` vuelve a crear la credencial SMTP en cada arranque; en local ejecute de nuevo `importar.sh` y reinicie n8n.
 

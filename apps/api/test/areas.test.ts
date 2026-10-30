@@ -10,7 +10,7 @@ const area = async (equipo: string, codigo: string) =>
     .where('e.codigo', '=', equipo).where('a.codigo', '=', codigo).executeTakeFirstOrThrow()).id;
 const enviarRQ = async (t: { id: number; version: number }, para: string, areaId?: number) =>
   avanzar(ctx, await actor(ctx, 'ops.sst@hesego.test'), t.id,
-    { version: t.version, numero: numero('RQ'), asignarA: await idUsuario(ctx, para), areaId }, [pdf()]);
+    { version: t.version, comentario: 'Listo para revisión', numero: numero('RQ'), asignarA: await idUsuario(ctx, para), areaId }, [pdf()]);
 
 describe('Al enviar se elige el área del equipo siguiente y una persona de esa área', () => {
   it('la solicitud queda registrada con el área de operaciones de la persona elegida', async () => {

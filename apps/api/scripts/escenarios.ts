@@ -78,6 +78,7 @@ export async function nueva(
     asignarA: await idUsuario(ctx, o.para ?? DESTINO.RQ!),
     valor: o.valor ?? '1500000',
     descripcion: o.descripcion ?? 'Elementos de protección personal',
+    comentario: 'Favor validar la factura y montar el requerimiento',
   }, o.facturas ?? [{ numero: o.numero ?? numero('FE'), archivos: o.archivos ?? [pdf('factura.pdf')] }], o.soportes);
 }
 
@@ -108,7 +109,8 @@ export async function completarEtapa(ctx: ContextoFlujo, id: number, destinos: R
     version: t.version,
     asignarA: para ? await idUsuario(ctx, para) : undefined,
     numero: paso.numero ? numero(paso.numero) : undefined,
-    comentario: paso.comentario,
+    // Cada etapa deja su observación para la siguiente persona (obligatoria)
+    comentario: paso.comentario ?? `${etapa} completada`,
   }, paso.documento ? [pdf(paso.documento)] : []);
 }
 

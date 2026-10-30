@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useLocation, useParams } from 'react-router-dom';
-import { X } from 'lucide-react';
+import { MessageSquare, X } from 'lucide-react';
 import { ErrorApi } from '../../api/cliente';
 import { useDetalle } from '../../api/consultas';
 import { Semaforo } from '../../componentes/marca';
@@ -12,6 +12,28 @@ import { PanelEtapa } from './PanelEtapa';
 import { ProgresoFlujo } from './ProgresoFlujo';
 import { SeccionAdjuntos, SeccionFacturas } from './Soportes';
 
+
+/**
+ * Lo que dejó escrito quien envió, devolvió o reasignó la transacción por última vez: es lo primero
+ * que ve la persona que la recibe (trazabilidad entre actores).
+ */
+function UltimaObservacion({ historial }: { historial: { tipo: string; motivo: string | null; datos: Record<string, unknown>; ocurrido_en: string; actor: string | null; origen_nombre: string | null }[] }) {
+  const ultimo = [...historial].reverse().find((e) => ['avanzada', 'devuelta', 'reasignada'].includes(e.tipo));
+  const texto = ultimo && (ultimo.motivo ?? (ultimo.datos.comentario as string | null | undefined));
+  if (!ultimo || !texto) return null;
+  const accion = ultimo.tipo === 'devuelta' ? 'Motivo de la devolución' : ultimo.tipo === 'reasignada' ? 'Motivo de la reasignación' : 'Observación';
+  return (
+    <Tarjeta acento="naranja" kicker={`${accion} · ${ultimo.actor ?? 'El sistema'}`}>
+      <div className="flex items-start gap-3">
+        <MessageSquare className="mt-1 h-5 w-5 shrink-0 text-teal-profundo" strokeWidth={2} />
+        <div className="min-w-0">
+          <p className="whitespace-pre-line text-[17px] text-tinta">{texto}</p>
+          <p className="mt-2 text-[14px] text-meta">{ultimo.origen_nombre ? `${ultimo.origen_nombre} · ` : ''}{formatearFechaHora(ultimo.ocurrido_en)} · Las anteriores están en el historial.</p>
+        </div>
+      </div>
+    </Tarjeta>
+  );
+}
 
 export function Detalle() {
   const id = Number(useParams().id);
@@ -50,6 +72,7 @@ export function Detalle() {
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
         <div className="space-y-6">
+          {t.estado === 'en_curso' && <UltimaObservacion historial={d.historial} />}
           <PanelEtapa d={d} alAvisar={setAviso} />
           <SeccionFacturas d={d} />
           <SeccionAdjuntos d={d} />

@@ -1,6 +1,7 @@
 import { sql } from 'kysely';
 import { describe, expect, it } from 'vitest';
-import { anular, devolver, reasignar } from '../src/dominio/flujo.js';
+import { pendientes } from '../src/dominio/consultas.js';
+import { anular, avanzar, devolver, reasignar } from '../src/dominio/flujo.js';
 import { comentar } from '../src/dominio/soportes.js';
 import { actor, idUsuario, llevarHasta, nueva, prepararContexto } from './ayudantes.js';
 
@@ -69,6 +70,25 @@ describe('Outbox para n8n', () => {
     const r = await ultimoOutbox(t.id, 'transaccion.reasignada');
     expect(r.destinatarios.responsables.map((x: any) => x.email)).toEqual(['ops.inventario@hesego.test']);
     expect(r.motivo).toBe('Vacaciones');
+  });
+
+  it('cada paso exige observación y el aviso lleva todas las anteriores; la bandeja muestra la última', async () => {
+    const t = await llevarHasta(ctx, (await nueva(ctx)).id, 'AP');
+    const ops = await actor(ctx, 'ops.sst@hesego.test');
+    const d = await devolver(ctx, await actor(ctx, 'lider.sst@hesego.test'), t.id, { version: t.version, motivo: 'El pantallazo no es legible' });
+    await expect(avanzar(ctx, ops, t.id, { version: d.version, asignarA: await idUsuario(ctx, 'lider.sst@hesego.test') }))
+      .rejects.toMatchObject({ codigo: 'REQUISITOS_INCOMPLETOS', message: expect.stringContaining('observación') });
+    await avanzar(ctx, ops, t.id, { version: d.version, comentario: 'Subí un pantallazo nuevo', asignarA: await idUsuario(ctx, 'lider.sst@hesego.test') });
+
+    const p = await ultimoOutbox(t.id, 'transaccion.avanzada');
+    expect(p.observaciones.map((o: any) => [o.actor, o.texto])).toEqual([
+      ['Carolina Ruiz', 'Favor validar la factura y montar el requerimiento'],
+      ['Julián Ortiz', 'RQ completada'],
+      ['Marcela Díaz', 'El pantallazo no es legible'],
+      ['Julián Ortiz', 'Subí un pantallazo nuevo'],
+    ]);
+    const bandeja = await pendientes(ctx.db, await actor(ctx, 'lider.sst@hesego.test'));
+    expect(bandeja.find((x) => x.id === t.id)).toMatchObject({ ultima_observacion: 'Subí un pantallazo nuevo', ultima_observacion_de: 'Julián Ortiz' });
   });
 
   it('el cierre y la anulación incluyen a todos los participantes', async () => {
