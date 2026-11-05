@@ -1,13 +1,18 @@
 import { useState, type ReactNode } from 'react';
-import { Ban, CheckCircle2, CornerUpLeft, FilePlus2, FileX2, Flag, Hash, MessageSquare, Paperclip, Send, Sparkles, UserRoundCog } from 'lucide-react';
+import { Ban, CheckCircle2, CornerUpLeft, Flag, MessageSquare, Send, Sparkles, UserRoundCog } from 'lucide-react';
 import { api } from '../../api/cliente';
 import { useAccionTransaccion } from '../../api/consultas';
 import type { Detalle } from '../../api/tipos';
 import { Alerta, AreaTexto, Boton, cx, Tarjeta } from '../../componentes/ui';
-import { formatearCOP, formatearFechaHora } from '../../formato';
-import { NOMBRE_TIPO_ADJUNTO } from './Soportes';
+import { formatearFechaHora } from '../../formato';
 
 type Evento = Detalle['historial'][number];
+
+/**
+ * La trazabilidad muestra solo los cambios de estado y los comentarios. Adjuntos, facturas y
+ * números de referencia ya se ven en sus propias tarjetas y aquí solo hacían ruido.
+ */
+const TIPOS_VISIBLES = new Set(['creada', 'avanzada', 'devuelta', 'reasignada', 'anulada', 'cerrada', 'comentario']);
 
 function describir(e: Evento, comentarios: Map<number, string>): { icono: ReactNode; tono: string; titulo: ReactNode; cita?: string | null } {
   const actor = <b>{e.actor ?? 'El sistema'}</b>;
@@ -30,19 +35,7 @@ function describir(e: Evento, comentarios: Map<number, string>): { icono: ReactN
     case 'anulada':
       return { icono: <Ban className={i} strokeWidth={2} />, tono: 'bg-rojo', titulo: <>{actor} anuló la transacción</>, cita: e.motivo };
     case 'cerrada':
-      return { icono: <Flag className={i} strokeWidth={2} />, tono: 'bg-verde', titulo: <>Transacción pagada y cerrada. Avisamos a todos los participantes.</> };
-    case 'referencia_registrada':
-      return { icono: <Hash className={i} strokeWidth={2} />, tono: 'bg-meta',
-        titulo: <>{actor} registró {datos.tipo} <b>{datos.numero}</b>{datos.reemplaza ? <> (antes {datos.reemplaza})</> : null}</> };
-    case 'factura_agregada':
-      return { icono: <FilePlus2 className={i} strokeWidth={2} />, tono: 'bg-meta', titulo: <>{actor} cargó la factura <b>{datos.numero}</b>{datos.valor ? <> por {formatearCOP(datos.valor)}</> : null}</> };
-    case 'factura_inactivada':
-      return { icono: <FileX2 className={i} strokeWidth={2} />, tono: 'bg-meta', titulo: <>{actor} retiró la factura <b>{datos.numero}</b></> };
-    case 'adjunto_agregado':
-      return { icono: <Paperclip className={i} strokeWidth={2} />, tono: 'bg-meta',
-        titulo: <>{actor} adjuntó {NOMBRE_TIPO_ADJUNTO[datos.tipo ?? '']?.toLowerCase() ?? 'un soporte'}: <b>{datos.nombre}</b></> };
-    case 'adjunto_inactivado':
-      return { icono: <FileX2 className={i} strokeWidth={2} />, tono: 'bg-meta', titulo: <>{actor} retiró un soporte ({NOMBRE_TIPO_ADJUNTO[datos.tipo ?? '']?.toLowerCase() ?? datos.tipo})</> };
+      return { icono: <Flag className={i} strokeWidth={2} />, tono: 'bg-verde', titulo: <>Transacción pagada y cerrada. Le avisamos al solicitante.</> };
     case 'comentario':
       return { icono: <MessageSquare className={i} strokeWidth={2} />, tono: 'bg-teal-vivo', titulo: <>{actor} comentó</>,
         cita: comentarios.get(Number(datos.comentario_id)) };
@@ -56,7 +49,7 @@ export function Historial({ d }: { d: Detalle }) {
   const [texto, setTexto] = useState('');
   const comentar = useAccionTransaccion(d.transaccion.id, () => api.post(`/transacciones/${d.transaccion.id}/comentarios`, { texto }));
   const comentarios = new Map(d.comentarios.map((c) => [c.id, c.texto]));
-  const eventos = [...d.historial].reverse();
+  const eventos = d.historial.filter((e) => TIPOS_VISIBLES.has(e.tipo)).reverse();
 
   return (
     <Tarjeta kicker="Trazabilidad" titulo="Historial">
@@ -69,21 +62,24 @@ export function Historial({ d }: { d: Detalle }) {
         </div>
       </form>
 
-      <ol className="relative space-y-5 before:absolute before:bottom-2 before:left-[15px] before:top-2 before:w-0.5 before:bg-linea">
-        {eventos.map((e) => {
-          const x = describir(e, comentarios);
-          return (
-            <li key={e.id} className="relative flex gap-3.5">
-              <span className={cx('relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-white ring-4 ring-white', x.tono)}>{x.icono}</span>
-              <div className="min-w-0 flex-1 pt-1">
-                <p className="text-[15px] leading-snug">{x.titulo}</p>
-                <p className="mt-0.5 text-[13px] text-meta">{formatearFechaHora(e.ocurrido_en)}</p>
-                {x.cita && <blockquote className="mt-2 rounded-xl border-l-4 border-teal-profundo bg-papel px-3.5 py-2.5 text-[15px] text-tinta">{x.cita}</blockquote>}
-              </div>
-            </li>
-          );
-        })}
-      </ol>
+      {/* Con desplazamiento propio: un proceso largo no obliga a bajar hasta el final de la página */}
+      <div className="-mr-2 max-h-[560px] overflow-y-auto overscroll-contain pr-2" tabIndex={0} role="region" aria-label="Historial de la transacción">
+        <ol className="relative space-y-5 before:absolute before:bottom-2 before:left-[15px] before:top-2 before:w-0.5 before:bg-linea">
+          {eventos.map((e) => {
+            const x = describir(e, comentarios);
+            return (
+              <li key={e.id} className="relative flex gap-3.5">
+                <span className={cx('relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-white ring-4 ring-white', x.tono)}>{x.icono}</span>
+                <div className="min-w-0 flex-1 pt-1">
+                  <p className="text-[15px] leading-snug">{x.titulo}</p>
+                  <p className="mt-0.5 text-[13px] text-meta">{formatearFechaHora(e.ocurrido_en)}</p>
+                  {x.cita && <blockquote className="mt-2 rounded-xl border-l-4 border-teal-profundo bg-papel px-3.5 py-2.5 text-[15px] text-tinta">{x.cita}</blockquote>}
+                </div>
+              </li>
+            );
+          })}
+        </ol>
+      </div>
     </Tarjeta>
   );
 }
