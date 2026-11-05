@@ -100,6 +100,7 @@ describe('1 · Equipo responsable', () => {
     assert.equal(m.responder_a, 'contabilidad1@hesego.test', 'las respuestas le llegan a quien la envió');
     assert.match(m.html, /El plazo es de 3 días hábiles/);
     assert.match(m.html, /FE-4101/);
+    assert.match(m.html, /<img src="http:\/\/localhost:8080\/brand\/logo-cuadrado-blanco\.png" width="76" height="80"/, 'el encabezado lleva el logo de la app');
     assert.match(m.html, /Seguridad y salud en el trabajo/);
     assert.match(m.html, /&lt;para&gt;/, 'la descripción debe ir escapada');
     assert.match(m.html, /Observación de Carolina Ruiz/, 'la observación del actor anterior va destacada');

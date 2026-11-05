@@ -6,6 +6,12 @@
 
 const APP_URL = String($env.APP_URL || '').replace(/\/$/, '');
 
+/**
+ * Logo blanco (archivo maestro de brand/, versión B sobre navy) servido por la propia app.
+ * Se enlaza por URL: Gmail y Outlook lo cargan desde ahí. 80 px de alto (proporción 2048 × 2155).
+ */
+const LOGO_CORREO = APP_URL ? `${APP_URL}/brand/logo-cuadrado-blanco.png` : '';
+
 /** Cuenta que envía (Gmail solo deja enviar desde la cuenta autenticada): la de MAIL_FROM o SMTP_USER. */
 const CORREO_ENVIO = (String($env.MAIL_FROM || '').match(/<([^>]+)>/) || [])[1] || String($env.MAIL_FROM || '').trim() || String($env.SMTP_USER || '');
 
@@ -73,8 +79,13 @@ function correo({ kicker, titulo, intro, filas = [], cita, citaEtiqueta, tabla, 
 <tr><td align="center">
 <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#FFFFFF;border:1px solid #E2EAED;border-radius:16px;overflow:hidden">
   <tr><td style="background:#0E4A57;background-image:linear-gradient(160deg,#0E4A57,#0A343E);padding:24px 32px">
-    <div style="font:700 11px/1 Arial,sans-serif;letter-spacing:3px;text-transform:uppercase;color:#6FD9E6">Hesego Ingeniería S.A.S.</div>
-    <div style="margin-top:8px;font:900 20px/1 'Arial Black',Arial,sans-serif;text-transform:uppercase;color:#FFFFFF">Flujo de gastos</div>
+    <table role="presentation" cellpadding="0" cellspacing="0"><tr>
+      ${LOGO_CORREO ? `<td style="padding-right:20px;vertical-align:middle"><img src="${escapar(LOGO_CORREO)}" width="76" height="80" alt="Hesego Ingeniería S.A.S." style="display:block;width:76px;height:80px;border:0;font:700 12px Arial,sans-serif;color:#FFFFFF"></td>` : ''}
+      <td style="vertical-align:middle">
+        <div style="font:700 11px/1 Arial,sans-serif;letter-spacing:3px;text-transform:uppercase;color:#6FD9E6">Hesego Ingeniería S.A.S.</div>
+        <div style="margin-top:8px;font:900 20px/1 'Arial Black',Arial,sans-serif;text-transform:uppercase;color:#FFFFFF">Flujo de gastos</div>
+      </td>
+    </tr></table>
   </td></tr>
   <tr><td style="padding:32px 32px 8px">
     <div style="font:700 12px/1 Arial,sans-serif;letter-spacing:2.5px;text-transform:uppercase;color:#0A7D8C">${escapar(kicker)}</div>
