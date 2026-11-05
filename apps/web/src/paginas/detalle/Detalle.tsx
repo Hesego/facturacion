@@ -76,7 +76,7 @@ export function Detalle() {
           {t.estado === 'en_curso' && <UltimaObservacion historial={d.historial} />}
           <PanelEtapa d={d} alAvisar={setAviso} />
           <SeccionFacturas d={d} />
-          <SeccionAdjuntos d={d} className="lg:flex-1" />
+          <SeccionAdjuntos d={d} />
         </div>
         <div className="flex min-w-0 flex-col gap-6">
           <Tarjeta kicker="Datos del gasto">
@@ -103,7 +103,7 @@ export function Detalle() {
               )}
             </dl>
           </Tarjeta>
-          <Historial d={d} className="lg:flex-1" />
+          <Historial d={d} />
         </div>
       </div>
     </>

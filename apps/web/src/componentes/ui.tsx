@@ -1,5 +1,5 @@
 // Componentes base del sistema visual Hesego (Manual de Marca v1.1, láminas 11 a 14).
-import { forwardRef, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes, type TextareaHTMLAttributes } from 'react';
+import { forwardRef, useLayoutEffect, useRef, useState, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes, type TextareaHTMLAttributes } from 'react';
 import { AlertTriangle, CheckCircle2, Info, Loader2, XCircle } from 'lucide-react';
 
 export const cx = (...c: (string | false | null | undefined)[]) => c.filter(Boolean).join(' ');
@@ -24,11 +24,13 @@ export function EncabezadoPagina({ kicker, titulo, children, acciones }: { kicke
   );
 }
 
-export function Tarjeta({ children, className, acento = 'teal', titulo, kicker, extra }: {
+export function Tarjeta({ children, className, acento = 'teal', titulo, kicker, extra, llenar }: {
   children: ReactNode; className?: string; acento?: 'teal' | 'naranja' | 'ninguno'; titulo?: ReactNode; kicker?: string; extra?: ReactNode;
+  /** En pantallas anchas ocupa el alto que sobra en su columna (para que las columnas terminen parejas). */
+  llenar?: boolean;
 }) {
   return (
-    <section className={cx('tarjeta', acento === 'teal' && 'tarjeta-acento', acento === 'naranja' && 'tarjeta-acento-naranja', className)}>
+    <section className={cx('tarjeta', acento === 'teal' && 'tarjeta-acento', acento === 'naranja' && 'tarjeta-acento-naranja', llenar && 'lg:flex lg:flex-1 lg:flex-col', className)}>
       {(titulo || kicker) && (
         <div className="flex items-start justify-between gap-3 px-5 pb-1 pt-6 sm:px-6">
           <div>
@@ -38,19 +40,37 @@ export function Tarjeta({ children, className, acento = 'teal', titulo, kicker, 
           {extra}
         </div>
       )}
-      <div className={cx('px-5 pb-5 sm:px-6 sm:pb-6', titulo || kicker ? 'pt-3' : 'pt-6')}>{children}</div>
+      <div className={cx('px-5 pb-5 sm:px-6 sm:pb-6', titulo || kicker ? 'pt-3' : 'pt-6', llenar && 'lg:flex lg:min-h-0 lg:flex-1 lg:flex-col')}>{children}</div>
     </section>
   );
 }
 
+const ALTO_MAX_ZONA = 560;
+
 /**
- * Zona con desplazamiento propio y la misma altura máxima en todas las tarjetas largas
- * (historial, soportes), para que el detalle se vea parejo y no obligue a bajar toda la página.
+ * Zona con desplazamiento propio para las tarjetas largas (historial, soportes). La barra solo
+ * aparece si el contenido no cabe. Reserva el alto de su contenido, hasta 560 px; en una tarjeta
+ * con `llenar` y pantalla ancha, además crece hasta el fondo de la tarjeta para que no quede
+ * espacio vacío debajo del scroll.
  */
 export function ZonaDesplazable({ children, etiqueta }: { children: ReactNode; etiqueta: string }) {
+  const contenido = useRef<HTMLDivElement>(null);
+  const [alto, setAlto] = useState<number>();
+  useLayoutEffect(() => {
+    const el = contenido.current;
+    if (!el) return;
+    const medir = () => setAlto(Math.min(el.offsetHeight, ALTO_MAX_ZONA));
+    medir();
+    const observador = new ResizeObserver(medir);
+    observador.observe(el);
+    return () => observador.disconnect();
+  }, []);
   return (
-    <div className="-mr-2 max-h-[560px] overflow-y-auto overscroll-contain pr-2" tabIndex={0} role="region" aria-label={etiqueta}>
-      {children}
+    <div className="lg:relative lg:flex-1" style={{ minHeight: alto }}>
+      <div className="-mr-2 max-h-[560px] overflow-y-auto overscroll-contain pr-2 lg:absolute lg:inset-0 lg:-right-2 lg:mr-0 lg:max-h-none"
+        tabIndex={0} role="region" aria-label={etiqueta}>
+        <div ref={contenido}>{children}</div>
+      </div>
     </div>
   );
 }

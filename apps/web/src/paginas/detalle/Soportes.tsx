@@ -123,7 +123,7 @@ export function SeccionFacturas({ d }: { d: Detalle }) {
   );
 }
 
-export function SeccionAdjuntos({ d, className }: { d: Detalle; className?: string }) {
+export function SeccionAdjuntos({ d }: { d: Detalle }) {
   const [archivos, setArchivos] = useState<File[]>([]);
   const [agregando, setAgregando] = useState(false);
   const subir = useAccionTransaccion(d.transaccion.id, (lista: File[]) =>
@@ -136,7 +136,7 @@ export function SeccionAdjuntos({ d, className }: { d: Detalle; className?: stri
     porEtapa.set(a.etapa_codigo, g);
   }
   return (
-    <Tarjeta kicker="Por etapa" titulo="Soportes" className={className}
+    <Tarjeta kicker="Por etapa" titulo="Soportes" llenar
       extra={d.acciones.adjuntar && !agregando && (
         <Boton variante="secundario" onClick={() => setAgregando(true)} icono={<Plus className="h-[18px] w-[18px]" strokeWidth={2} />}>Agregar</Boton>
       )}>

@@ -45,14 +45,14 @@ function describir(e: Evento, comentarios: Map<number, string>): { icono: ReactN
 }
 
 /** Línea de tiempo del historial (solo inserción) con la conversación de la transacción. */
-export function Historial({ d, className }: { d: Detalle; className?: string }) {
+export function Historial({ d }: { d: Detalle }) {
   const [texto, setTexto] = useState('');
   const comentar = useAccionTransaccion(d.transaccion.id, () => api.post(`/transacciones/${d.transaccion.id}/comentarios`, { texto }));
   const comentarios = new Map(d.comentarios.map((c) => [c.id, c.texto]));
   const eventos = d.historial.filter((e) => TIPOS_VISIBLES.has(e.tipo)).reverse();
 
   return (
-    <Tarjeta kicker="Trazabilidad" titulo="Historial" className={className}>
+    <Tarjeta kicker="Trazabilidad" titulo="Historial" llenar>
       <form className="mb-6" onSubmit={(e) => { e.preventDefault(); comentar.mutate(undefined, { onSuccess: () => setTexto('') }); }}>
         <label htmlFor="comentario" className="sr-only">Escribe un comentario</label>
         <AreaTexto id="comentario" value={texto} onChange={(e) => setTexto(e.target.value)} placeholder="Escribe un comentario para el equipo…" className="min-h-[72px]" />
