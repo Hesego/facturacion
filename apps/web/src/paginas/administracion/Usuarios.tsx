@@ -2,7 +2,7 @@ import type { AreaAdmin, EquipoAdmin, UsuarioAdmin } from '../../api/tipos';
 import { NOMBRE_EQUIPO } from '../../componentes/Layout';
 import { Campo, Chip, Entrada } from '../../componentes/ui';
 import { formatearFechaHora } from '../../formato';
-import { Casillas, DialogoFormulario, Estado, Interruptor, SeccionAdmin, useAdmin, useFormulario, useGuardar } from './comun';
+import { Casillas, DialogoFormulario, Estado, filtroEstado, Interruptor, SeccionAdmin, useAdmin, useFormulario, useGuardar } from './comun';
 
 interface Formulario { email: string; nombre: string; cargo: string; password: string; equipos: string[]; areas: number[]; activo: boolean }
 const vacio: Formulario = { email: '', nombre: '', cargo: '', password: '', equipos: [], areas: [], activo: true };
@@ -28,6 +28,14 @@ export function Usuarios() {
       <SeccionAdmin titulo="Usuarios" textoNuevo="Nuevo usuario"
         descripcion="Cada usuario puede pertenecer a varios equipos. A quien pertenece al equipo de una etapa se le pueden enviar los gastos de esa etapa."
         filas={data} cargando={isLoading}
+        buscarEn={(u) => [u.nombre, u.email, u.cargo]} textoBuscar="Buscar por nombre, correo o cargo"
+        filtros={[
+          { id: 'equipo', todos: 'Todos los equipos', opciones: (equipos ?? []).map((e) => ({ valor: e.codigo, etiqueta: e.nombre })),
+            cumple: (u, v) => u.equipos.includes(v) },
+          { id: 'area', todos: 'Todas las áreas', opciones: (areas ?? []).map((a) => ({ valor: String(a.id), etiqueta: `${a.equipo} · ${a.nombre}` })),
+            cumple: (u, v) => u.areas.includes(Number(v)) },
+          filtroEstado((u: UsuarioAdmin) => u.activo),
+        ]}
         nuevo={() => { guardar.reset(); form.abrir(vacio); }}
         editar={(u) => { guardar.reset(); form.abrir({ email: u.email, nombre: u.nombre, cargo: u.cargo ?? '', password: '', equipos: u.equipos, areas: u.areas, activo: u.activo }, u.id); }}
         columnas={[

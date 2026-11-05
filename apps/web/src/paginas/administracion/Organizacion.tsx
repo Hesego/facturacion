@@ -1,6 +1,6 @@
 import type { AreaAdmin, EquipoAdmin, UsuarioAdmin } from '../../api/tipos';
 import { AreaTexto, Campo, Chip, Entrada, Seleccion } from '../../componentes/ui';
-import { DialogoFormulario, Estado, Interruptor, SeccionAdmin, useAdmin, useFormulario, useGuardar } from './comun';
+import { DialogoFormulario, Estado, filtroEstado, Interruptor, SeccionAdmin, useAdmin, useFormulario, useGuardar } from './comun';
 
 const opcionesUsuarios = (usuarios: UsuarioAdmin[] | undefined) => (
   <>
@@ -27,6 +27,12 @@ export function Equipos() {
     <>
       <SeccionAdmin titulo="Equipos" textoNuevo="Nuevo equipo" filas={data} cargando={isLoading}
         descripcion="Cada etapa del flujo tiene un equipo responsable. El líder del equipo recibe el escalamiento cuando una etapa vence."
+        buscarEn={(e) => [e.nombre, e.codigo, e.lider_nombre, e.descripcion, ...(e.etapas ?? [])]} textoBuscar="Buscar por nombre, código, líder o etapa"
+        filtros={[
+          { id: 'lider', todos: 'Con y sin líder', opciones: [{ valor: 'con', etiqueta: 'Con líder' }, { valor: 'sin', etiqueta: 'Sin líder' }],
+            cumple: (e, v) => (e.lider_usuario_id !== null) === (v === 'con') },
+          filtroEstado((e: EquipoAdmin) => e.activo),
+        ]}
         nuevo={() => { guardar.reset(); form.abrir({ codigo: '', nombre: '', descripcion: '', liderUsuarioId: '', activo: true }); }}
         editar={(e) => { guardar.reset(); form.abrir({ codigo: e.codigo, nombre: e.nombre, descripcion: e.descripcion ?? '', liderUsuarioId: e.lider_usuario_id ? String(e.lider_usuario_id) : '', activo: e.activo }, e.id); }}
         columnas={[
@@ -72,6 +78,12 @@ export function Areas() {
     <>
       <SeccionAdmin titulo="Áreas" textoNuevo="Nueva área" filas={data} cargando={isLoading}
         descripcion="Áreas dentro de un equipo (p. ej. Operaciones → SST, TICS, Inventario). Al enviar a una etapa de ese equipo se elige el área y luego la persona. Los miembros de cada área se asignan en Usuarios."
+        buscarEn={(a) => [a.nombre, a.codigo, a.equipo]} textoBuscar="Buscar por nombre, código o equipo"
+        filtros={[
+          { id: 'equipo', todos: 'Todos los equipos', opciones: (equipos ?? []).map((q) => ({ valor: String(q.id), etiqueta: q.nombre })),
+            cumple: (a, v) => a.equipo_id === Number(v) },
+          filtroEstado((a: AreaAdmin) => a.activa),
+        ]}
         nuevo={() => { guardar.reset(); form.abrir({ equipoId: '', codigo: '', nombre: '', activa: true }); }}
         editar={(a) => { guardar.reset(); form.abrir({ equipoId: String(a.equipo_id), codigo: a.codigo, nombre: a.nombre, activa: a.activa }, a.id); }}
         columnas={[
