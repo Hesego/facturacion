@@ -6,7 +6,7 @@ import type { Detalle } from '../../api/tipos';
 import { CargaArchivos } from '../../componentes/CargaArchivo';
 import { FormFactura } from '../../componentes/FormFactura';
 import { BotonVer, useVisor, VisorArchivo } from '../../componentes/VisorArchivo';
-import { Alerta, Boton, Chip, cx, Tarjeta } from '../../componentes/ui';
+import { Alerta, Boton, Chip, cx, Tarjeta, ZonaDesplazable } from '../../componentes/ui';
 import { formatearCOP, formatearFecha, formatearFechaHora, formatearTamano } from '../../formato';
 
 const descarga = (id: number) => `/api/adjuntos/${id}/descarga`;
@@ -123,7 +123,7 @@ export function SeccionFacturas({ d }: { d: Detalle }) {
   );
 }
 
-export function SeccionAdjuntos({ d }: { d: Detalle }) {
+export function SeccionAdjuntos({ d, className }: { d: Detalle; className?: string }) {
   const [archivos, setArchivos] = useState<File[]>([]);
   const [agregando, setAgregando] = useState(false);
   const subir = useAccionTransaccion(d.transaccion.id, (lista: File[]) =>
@@ -136,7 +136,7 @@ export function SeccionAdjuntos({ d }: { d: Detalle }) {
     porEtapa.set(a.etapa_codigo, g);
   }
   return (
-    <Tarjeta kicker="Por etapa" titulo="Soportes"
+    <Tarjeta kicker="Por etapa" titulo="Soportes" className={className}
       extra={d.acciones.adjuntar && !agregando && (
         <Boton variante="secundario" onClick={() => setAgregando(true)} icono={<Plus className="h-[18px] w-[18px]" strokeWidth={2} />}>Agregar</Boton>
       )}>
@@ -154,14 +154,16 @@ export function SeccionAdjuntos({ d }: { d: Detalle }) {
         </div>
       )}
       {adjuntos.length === 0 ? <p className="text-secundario">Aún no hay soportes cargados.</p> : (
-        <div className="space-y-5">
-          {[...porEtapa.entries()].map(([codigo, g]) => (
-            <div key={codigo}>
-              <p className="mb-2 font-etiqueta text-[13px] font-bold uppercase tracking-chip text-teal-profundo">{codigo} · {g.nombre}</p>
-              <ListaAdjuntos d={d} adjuntos={g.lista} />
-            </div>
-          ))}
-        </div>
+        <ZonaDesplazable etiqueta="Soportes de la transacción">
+          <div className="space-y-5">
+            {[...porEtapa.entries()].map(([codigo, g]) => (
+              <div key={codigo}>
+                <p className="mb-2 font-etiqueta text-[13px] font-bold uppercase tracking-chip text-teal-profundo">{codigo} · {g.nombre}</p>
+                <ListaAdjuntos d={d} adjuntos={g.lista} />
+              </div>
+            ))}
+          </div>
+        </ZonaDesplazable>
       )}
     </Tarjeta>
   );

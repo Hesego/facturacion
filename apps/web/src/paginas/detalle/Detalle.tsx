@@ -70,14 +70,15 @@ export function Detalle() {
 
       <Tarjeta acento="ninguno" className="mb-6"><ProgresoFlujo d={d} /></Tarjeta>
 
+      {/* Dos columnas que terminan a la misma altura: la última tarjeta de cada una se estira */}
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
-        <div className="space-y-6">
+        <div className="flex min-w-0 flex-col gap-6">
           {t.estado === 'en_curso' && <UltimaObservacion historial={d.historial} />}
           <PanelEtapa d={d} alAvisar={setAviso} />
           <SeccionFacturas d={d} />
-          <SeccionAdjuntos d={d} />
+          <SeccionAdjuntos d={d} className="lg:flex-1" />
         </div>
-        <div className="space-y-6">
+        <div className="flex min-w-0 flex-col gap-6">
           <Tarjeta kicker="Datos del gasto">
             {t.valor ? (
               <>
@@ -102,7 +103,7 @@ export function Detalle() {
               )}
             </dl>
           </Tarjeta>
-          <Historial d={d} />
+          <Historial d={d} className="lg:flex-1" />
         </div>
       </div>
     </>

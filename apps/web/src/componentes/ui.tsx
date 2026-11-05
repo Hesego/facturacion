@@ -43,6 +43,18 @@ export function Tarjeta({ children, className, acento = 'teal', titulo, kicker, 
   );
 }
 
+/**
+ * Zona con desplazamiento propio y la misma altura máxima en todas las tarjetas largas
+ * (historial, soportes), para que el detalle se vea parejo y no obligue a bajar toda la página.
+ */
+export function ZonaDesplazable({ children, etiqueta }: { children: ReactNode; etiqueta: string }) {
+  return (
+    <div className="-mr-2 max-h-[560px] overflow-y-auto overscroll-contain pr-2" tabIndex={0} role="region" aria-label={etiqueta}>
+      {children}
+    </div>
+  );
+}
+
 type Variante = 'primario' | 'accion' | 'secundario' | 'peligro' | 'fantasma';
 const VARIANTES: Record<Variante, string> = {
   // Teal profundo con texto blanco: contraste 4,9:1

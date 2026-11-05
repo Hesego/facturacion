@@ -3,7 +3,7 @@ import { Ban, CheckCircle2, CornerUpLeft, Flag, MessageSquare, Send, Sparkles, U
 import { api } from '../../api/cliente';
 import { useAccionTransaccion } from '../../api/consultas';
 import type { Detalle } from '../../api/tipos';
-import { Alerta, AreaTexto, Boton, cx, Tarjeta } from '../../componentes/ui';
+import { Alerta, AreaTexto, Boton, cx, Tarjeta, ZonaDesplazable } from '../../componentes/ui';
 import { formatearFechaHora } from '../../formato';
 
 type Evento = Detalle['historial'][number];
@@ -45,14 +45,14 @@ function describir(e: Evento, comentarios: Map<number, string>): { icono: ReactN
 }
 
 /** Línea de tiempo del historial (solo inserción) con la conversación de la transacción. */
-export function Historial({ d }: { d: Detalle }) {
+export function Historial({ d, className }: { d: Detalle; className?: string }) {
   const [texto, setTexto] = useState('');
   const comentar = useAccionTransaccion(d.transaccion.id, () => api.post(`/transacciones/${d.transaccion.id}/comentarios`, { texto }));
   const comentarios = new Map(d.comentarios.map((c) => [c.id, c.texto]));
   const eventos = d.historial.filter((e) => TIPOS_VISIBLES.has(e.tipo)).reverse();
 
   return (
-    <Tarjeta kicker="Trazabilidad" titulo="Historial">
+    <Tarjeta kicker="Trazabilidad" titulo="Historial" className={className}>
       <form className="mb-6" onSubmit={(e) => { e.preventDefault(); comentar.mutate(undefined, { onSuccess: () => setTexto('') }); }}>
         <label htmlFor="comentario" className="sr-only">Escribe un comentario</label>
         <AreaTexto id="comentario" value={texto} onChange={(e) => setTexto(e.target.value)} placeholder="Escribe un comentario para el equipo…" className="min-h-[72px]" />
@@ -63,7 +63,7 @@ export function Historial({ d }: { d: Detalle }) {
       </form>
 
       {/* Con desplazamiento propio: un proceso largo no obliga a bajar hasta el final de la página */}
-      <div className="-mr-2 max-h-[560px] overflow-y-auto overscroll-contain pr-2" tabIndex={0} role="region" aria-label="Historial de la transacción">
+      <ZonaDesplazable etiqueta="Historial de la transacción">
         <ol className="relative space-y-5 before:absolute before:bottom-2 before:left-[15px] before:top-2 before:w-0.5 before:bg-linea">
           {eventos.map((e) => {
             const x = describir(e, comentarios);
@@ -79,7 +79,7 @@ export function Historial({ d }: { d: Detalle }) {
             );
           })}
         </ol>
-      </div>
+      </ZonaDesplazable>
     </Tarjeta>
   );
 }
