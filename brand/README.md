@@ -4,8 +4,8 @@ Según el Manual de Marca Hesego v1.1, el logo se usa **solo desde sus archivos 
 
 | Archivo | Uso | Lámina |
 |---|---|---|
-| `logo-cuadrado-color.svg` (o `.png`) | Login y fondos claros | 6 · versión A |
-| `logo-cuadrado-blanco.svg` (o `.png`) | Barra lateral navy y encabezado de correos | 6 · versión B |
+| `logo-cuadrado-color.svg` (o `.png`) | Favicon de la pestaña y fondos claros | 6 · versión A |
+| `logo-cuadrado-blanco.svg` (o `.png`) | Barra lateral navy, inicio de sesión y encabezado de correos | 6 · versión B |
 | `fuentes/GlacialIndifference-Regular.woff2` | Cuerpo de texto (400) | 12 |
 | `fuentes/GlacialIndifference-Bold.woff2` | Cuerpo de texto (700) | 12 |
 
