@@ -56,7 +56,7 @@ BEGIN
        "adjuntos": [{"tipo": "comprobante_pago", "etiqueta": "Comprobante de pago", "min": 1}]}'),
 
     ('FT', 'FT', 100, 'Cierre', 'sistema', NULL, false,
-     'El sistema cierra la transacción como pagada y notifica a todos los participantes.',
+     'El sistema cierra la transacción como pagada y le avisa al solicitante.',
      '{}')
   ) AS s (codigo, grupo, orden, nombre, tipo, equipo, segregacion, descripcion, requisitos)
   LEFT JOIN equipos eq ON eq.codigo = s.equipo;

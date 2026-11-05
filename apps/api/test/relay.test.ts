@@ -42,7 +42,7 @@ describe('Relay del outbox hacia n8n', () => {
     const t = await nueva(ctx);
     expect(await relay().procesarLote()).toBe(1);
 
-    expect(recibidos.map((r) => r.ruta)).toEqual(['gastos-responsables', 'gastos-seguimiento']);
+    expect(recibidos.map((r) => r.ruta)).toEqual(['gastos-responsables']);
     expect(recibidos.every((r) => r.token === TOKEN)).toBe(true);
     const [o] = await outbox(t.id);
     expect(recibidos[0]!.cuerpo).toMatchObject({ outbox_id: o!.id, tipo: 'transaccion.avanzada', transaccion: { consecutivo: t.consecutivo } });
@@ -59,12 +59,12 @@ describe('Relay del outbox hacia n8n', () => {
 
   it('si n8n falla, reintenta más tarde sin perder el evento', async () => {
     const t = await nueva(ctx);
-    responder = (ruta) => (ruta === 'gastos-seguimiento' ? 500 : 200);
+    responder = (ruta) => (ruta === 'gastos-responsables' ? 500 : 200);
     await relay().procesarLote();
 
     const [o] = await outbox(t.id);
     expect(o).toMatchObject({ estado: 'pendiente', intentos: 1 });
-    expect(o!.ultimo_error).toContain('gastos-seguimiento respondió 500');
+    expect(o!.ultimo_error).toContain('gastos-responsables respondió 500');
     expect(new Date(o!.proximo_intento).getTime()).toBeGreaterThan(Date.now() + 20_000); // espera 30 s
 
     // No se vuelve a tomar antes de tiempo

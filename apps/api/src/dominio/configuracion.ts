@@ -5,7 +5,6 @@ const POR_DEFECTO = {
   equipos_pueden_anular: ['contabilidad', 'administrador'] as string[],
   equipos_gestionan_facturas: ['contabilidad'] as string[],
   equipos_pueden_reasignar: ['contabilidad', 'administrador'] as string[],
-  equipos_seguimiento: ['contabilidad'] as string[],
   adjuntos_tamano_max_mb: 25 as number,
   adjuntos_tipos_permitidos: ['application/pdf', 'image/png', 'image/jpeg', 'application/xml', 'text/xml', 'application/zip'] as string[],
 };

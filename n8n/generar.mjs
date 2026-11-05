@@ -143,10 +143,9 @@ function workflowSla() {
 
 export function generar() {
   return {
-    '1-notificar-responsables.json': workflowWebhook('Gastos 1 · Notificar al equipo responsable', 'gastos-responsables', 'responsables.js'),
-    '2-notificar-seguimiento.json': workflowWebhook('Gastos 2 · Notificar al solicitante y a contabilidad', 'gastos-seguimiento', 'seguimiento.js'),
+    '1-notificar-responsables.json': workflowWebhook('Gastos 1 · Notificar al destinatario del paso', 'gastos-responsables', 'responsables.js'),
     '3-recordatorio-sla.json': workflowSla(),
-    '4-notificar-cierre.json': workflowWebhook('Gastos 4 · Notificar el cierre a los participantes', 'gastos-cierre', 'cierre.js'),
+    '4-notificar-cierre.json': workflowWebhook('Gastos 4 · Notificar el cierre al solicitante', 'gastos-cierre', 'cierre.js'),
   };
 }
 

@@ -21,20 +21,21 @@ INSERT outbox_eventos                   POST a cada webhook del tipo de evento  
 
 | Evento | Webhooks |
 |---|---|
-| `transaccion.avanzada` | `gastos-responsables`, `gastos-seguimiento` |
-| `transaccion.devuelta` | `gastos-responsables`, `gastos-seguimiento` |
+| `transaccion.avanzada` | `gastos-responsables` |
+| `transaccion.devuelta` | `gastos-responsables` |
 | `transaccion.reasignada` | `gastos-responsables` |
-| `transaccion.anulada` | `gastos-seguimiento` (incluye a los participantes) |
+| `transaccion.anulada` | `gastos-responsables` |
 | `transaccion.cerrada` | `gastos-cierre` |
 
 ## Workflows
 
 | Archivo | Disparador | A quién |
 |---|---|---|
-| `1-notificar-responsables.json` | Webhook `gastos-responsables` | La persona a la que se le envió, devolvió o reasignó la transacción |
-| `2-notificar-seguimiento.json` | Webhook `gastos-seguimiento` | Solicitante y contabilidad (dueña del proceso), sin quien hizo el cambio |
+| `1-notificar-responsables.json` | Webhook `gastos-responsables` | Solo la persona a la que se le envió, devolvió o reasignó la transacción; en una anulación, quien la tenía pendiente |
 | `3-recordatorio-sla.json` | Lunes a viernes 7:00, omite festivos | Un correo por persona con sus gastos vencidos, y escalamiento al líder del equipo de la etapa |
-| `4-notificar-cierre.json` | Webhook `gastos-cierre` | Todos los que participaron en la transacción |
+| `4-notificar-cierre.json` | Webhook `gastos-cierre` | El solicitante |
+
+**Regla:** cada correo le llega solo al destinatario del paso, nunca a un equipo completo. Quien hizo el cambio no recibe aviso. (Hasta el 2026-11-05 existía `2-notificar-seguimiento.json`, que avisaba al solicitante y a contabilidad en cada cambio; se eliminó. Si ya estaba importado en n8n, desactívelo o bórrelo: la API ya no lo llama.)
 
 Los JSON **se generan**: no los edite a mano. Cambie `n8n/fuente/` (`comun.js` tiene la plantilla de correo de marca) y ejecute:
 
@@ -57,7 +58,7 @@ El script crea dos credenciales con ids fijos, a partir de las variables de `.en
 - **Postgres Gastos (n8n)**: usuario `gastos_n8n`. Solo lee `v_sla_vencidas` y `fn_hoy_es_habil()`, y escribe en `notificaciones_log`.
 - **SMTP Gastos**: en local, Mailpit; los correos se ven en http://localhost:8025.
 
-Después importa los 4 workflows y los activa. Se puede volver a ejecutar sin problema.
+Después importa los 3 workflows y los activa. Se puede volver a ejecutar sin problema.
 
 > Si su versión de n8n no acepta credenciales en texto plano al importar, créelas a mano en *Credentials* con esos mismos nombres y vuelva a abrir cada workflow para seleccionarlas.
 

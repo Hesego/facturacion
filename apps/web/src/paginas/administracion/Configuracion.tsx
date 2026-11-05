@@ -12,7 +12,6 @@ const TITULOS: Record<string, string> = {
   equipos_pueden_anular: 'Quién puede anular',
   equipos_gestionan_facturas: 'Quién registra facturas',
   equipos_pueden_reasignar: 'Quién puede reasignar',
-  equipos_seguimiento: 'Quién recibe el seguimiento',
 };
 
 function Editor({ c, equipos }: { c: ConfigAdmin; equipos: EquipoAdmin[] }) {

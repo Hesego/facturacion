@@ -17,7 +17,7 @@ SOL → RQ → AP → OC → AG → ES → PG_ENV → PG_APR → RP → FT
 | PG_ENV | Envío a aprobación de pago | Contabilidad |
 | PG_APR | Aprobación de pago | Gerencia financiera |
 | RP | Pago | Contabilidad |
-| FT | Cierre | Sistema (avisa a todos los participantes) |
+| FT | Cierre | Sistema (avisa al solicitante) |
 
 | Documento | Contenido |
 |---|---|
@@ -82,7 +82,7 @@ docker compose exec n8n sh /flujo/importar.sh
 docker compose restart n8n
 ```
 
-El script crea las credenciales (Postgres con el rol restringido `gastos_n8n` y SMTP), importa los 4 workflows de `n8n/workflows/` y los deja activos. Se puede volver a ejecutar. En local los correos llegan a Mailpit. Para Gmail en producción y otros canales, vea [`docs/n8n.md`](docs/n8n.md).
+El script crea las credenciales (Postgres con el rol restringido `gastos_n8n` y SMTP), importa los 3 workflows de `n8n/workflows/` y los deja activos. Se puede volver a ejecutar. En local los correos llegan a Mailpit. Para Gmail en producción y otros canales, vea [`docs/n8n.md`](docs/n8n.md).
 
 ### Variables de entorno (`.env`)
 

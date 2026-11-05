@@ -1,5 +1,5 @@
 #!/bin/sh
-# Importa en n8n las credenciales y los 4 workflows del flujo de gastos, y los deja activos.
+# Importa en n8n las credenciales y los 3 workflows del flujo de gastos, y los deja activos.
 # Se ejecuta DENTRO del contenedor de n8n:
 #   docker compose exec n8n sh /flujo/importar.sh
 #   docker compose restart n8n

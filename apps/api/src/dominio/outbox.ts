@@ -2,28 +2,10 @@ import { sql } from 'kysely';
 import { formatearCOP } from '@gastos/shared';
 import type { Trx } from '../db/conexion.js';
 import type { Etapa, Transaccion } from '../db/esquema.js';
-import type { Actor, Persona } from './autorizacion.js';
-import { leerConfig } from './configuracion.js';
+import type { Actor } from './autorizacion.js';
 
 /** Tipos de evento que la API publica en el outbox (los consume n8n). */
 export type TipoOutbox = 'transaccion.avanzada' | 'transaccion.devuelta' | 'transaccion.reasignada' | 'transaccion.anulada' | 'transaccion.cerrada';
-
-/** Solicitante + equipos de seguimiento (contabilidad), sin repetir y sin quien hizo el cambio. */
-async function seguimiento(trx: Trx, t: Transaccion, excluirId: number | null): Promise<Persona[]> {
-  const equipos = await leerConfig(trx, 'equipos_seguimiento');
-  const filas = await trx
-    .selectFrom('usuarios as u')
-    .select(['u.id', 'u.email', 'u.nombre'])
-    .where('u.activo', '=', true)
-    .where((eb) => eb.or([
-      eb('u.id', '=', t.solicitante_id),
-      eb.exists(eb.selectFrom('usuario_equipo as ue').innerJoin('equipos as e', 'e.id', 'ue.equipo_id')
-        .whereRef('ue.usuario_id', '=', 'u.id').where('e.codigo', 'in', equipos.length ? equipos : ['__ninguno__']).select(sql`1`.as('x'))),
-    ]))
-    .orderBy('u.nombre')
-    .execute();
-  return filas.filter((p) => p.id !== excluirId);
-}
 
 /**
  * Observaciones de cada paso, en orden: lo que escribió quien envió (comentario), devolvió,
@@ -49,20 +31,6 @@ async function observaciones(trx: Trx, transaccionId: number) {
   ].sort((a, b) => a.fecha.localeCompare(b.fecha));
 }
 
-/** Todos los que actuaron en la transacción, más el solicitante. */
-async function participantes(trx: Trx, t: Transaccion): Promise<Persona[]> {
-  return trx
-    .selectFrom('usuarios as u')
-    .select(['u.id', 'u.email', 'u.nombre'])
-    .where('u.activo', '=', true)
-    .where((eb) => eb.or([
-      eb('u.id', '=', t.solicitante_id),
-      eb('u.id', 'in', eb.selectFrom('eventos').select('actor_id').where('transaccion_id', '=', t.id).where('actor_id', 'is not', null)),
-    ]))
-    .orderBy('u.nombre')
-    .execute();
-}
-
 interface DatosEmision {
   tipo: TipoOutbox;
   eventoId: number;
@@ -73,12 +41,19 @@ interface DatosEmision {
   actor: Actor | null;
   motivo?: string | null;
   comentario?: string | null;
+  /** En la anulación: quien tenía la transacción pendiente (la anulación ya dejó `asignado_a` en NULL). */
+  teniaAsignadoId?: number | null;
   appUrl: string;
 }
 
 /**
  * Inserta el evento en el outbox, dentro de la misma transacción del cambio de estado.
  * Los destinatarios se resuelven aquí: decidir a quién avisar es lógica de negocio y no le toca a n8n.
+ *
+ * Regla (2026-11-05): solo recibe correo el destinatario del paso, nunca un equipo completo.
+ * - Avance, devolución y reasignación: la persona a la que se le asignó la transacción.
+ * - Anulación: la persona que la tenía pendiente (si no es quien anuló).
+ * - Cierre (pagada): el solicitante.
  */
 export async function emitirOutbox(trx: Trx, d: DatosEmision): Promise<void> {
   const [solicitante, asignado, facturas, area] = await Promise.all([
@@ -88,9 +63,14 @@ export async function emitirOutbox(trx: Trx, d: DatosEmision): Promise<void> {
     d.t.area_id ? trx.selectFrom('areas').select('nombre').where('id', '=', d.t.area_id).executeTakeFirst() : undefined,
   ]);
 
-  const cierre = d.tipo === 'transaccion.cerrada' || d.tipo === 'transaccion.anulada';
+  const cerrada = d.tipo === 'transaccion.cerrada';
+  const anulada = d.tipo === 'transaccion.anulada';
+  const idDestinatario = cerrada ? d.t.solicitante_id : anulada ? (d.teniaAsignadoId ?? null) : d.t.asignado_a;
+  const destinatario = idDestinatario && idDestinatario !== d.actor?.id
+    ? await trx.selectFrom('usuarios').select(['id', 'email', 'nombre']).where('id', '=', idDestinatario).where('activo', '=', true).executeTakeFirst()
+    : undefined;
   const payload = {
-    version_payload: 2,
+    version_payload: 3,
     evento: { id: d.eventoId, tipo: d.tipo, ocurrido_en: new Date().toISOString() },
     transaccion: {
       id: d.t.id,
@@ -114,12 +94,8 @@ export async function emitirOutbox(trx: Trx, d: DatosEmision): Promise<void> {
     // Todas las observaciones hasta este paso (incluido), de la más antigua a la más reciente
     observaciones: await observaciones(trx, d.t.id),
     destinatarios: {
-      // La persona a la que se le asignó la transacción (vacío en cierre y anulación)
-      responsables: !cierre && asignado ? [asignado] : [],
-      // Solicitante y contabilidad, dueña del proceso
-      seguimiento: await seguimiento(trx, d.t, d.actor?.id ?? null),
-      // Todos los que participaron (solo en cierre y anulación)
-      participantes: cierre ? await participantes(trx, d.t) : [],
+      // Solo el destinatario del paso (ver la regla arriba); vacío si no hay a quién avisar
+      responsables: destinatario ? [destinatario] : [],
     },
   };
 

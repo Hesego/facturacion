@@ -9,10 +9,10 @@ import type { BD } from '../db/conexion.js';
 
 /** A qué workflows de n8n va cada tipo de evento (ruta del webhook bajo N8N_WEBHOOK_BASE). */
 export const RUTAS_N8N: Record<string, string[]> = {
-  'transaccion.avanzada': ['gastos-responsables', 'gastos-seguimiento'],
-  'transaccion.devuelta': ['gastos-responsables', 'gastos-seguimiento'],
+  'transaccion.avanzada': ['gastos-responsables'],
+  'transaccion.devuelta': ['gastos-responsables'],
   'transaccion.reasignada': ['gastos-responsables'],
-  'transaccion.anulada': ['gastos-seguimiento'],
+  'transaccion.anulada': ['gastos-responsables'],
   'transaccion.cerrada': ['gastos-cierre'],
 };
 

@@ -1,10 +1,26 @@
-// Workflow 1 · Avisar a la persona a la que se le asignó la transacción (avance, devolución o reasignación).
+// Workflow 1 · Avisar SOLO al destinatario del paso: la persona a la que se le asignó la transacción
+// (avance, devolución o reasignación) o la que la tenía pendiente cuando se anuló. Nunca a equipos completos.
 const entrada = $input.first().json;
 validarToken(entrada);
 const e = entrada.body;
 const t = e.transaccion;
 const responsables = unicos(e.destinatarios.responsables);
 if (!responsables.length) return sinMensajes(); // p. ej. la etapa de cierre la ejecuta el sistema
+
+if (e.tipo === 'transaccion.anulada') {
+  const html = correo({
+    kicker: `${t.consecutivo} · Anulado`,
+    titulo: 'Gasto anulado',
+    intro: `<b>${escapar(e.actor.nombre)}</b> anuló la transacción que tenías en <b>${escapar(e.etapa_origen.nombre)}</b>. Ya no tienes que hacer nada con ella.`,
+    cita: e.motivo,
+    citaEtiqueta: `Motivo de ${e.actor.nombre}`,
+    filas: filasGasto(t),
+    tabla: tablaObservaciones(e.observaciones),
+    boton: { texto: 'Ver la transacción', url: t.url },
+    nota: `Si respondes este correo, la respuesta le llega a ${escapar(e.actor.nombre)}.`,
+  });
+  return mensajes(responsables, { flujo: 'responsables', outboxId: e.outbox_id, transaccionId: t.id, tipo: 'anulacion', asunto: asuntoGasto(t, 'Anulado'), html, actor: e.actor });
+}
 
 const reasignada = e.tipo === 'transaccion.reasignada';
 const devuelta = e.tipo === 'transaccion.devuelta';

@@ -21,7 +21,5 @@ INSERT INTO configuracion (clave, valor, descripcion) VALUES
   ('equipos_gestionan_facturas', '["contabilidad"]',
    'Equipos que registran e inactivan facturas en cualquier etapa en curso'),
   ('equipos_pueden_reasignar', '["contabilidad", "administrador"]',
-   'Equipos que pueden reasignar una transacción a otra persona del mismo equipo (vacaciones, ausencias). La persona asignada siempre puede.'),
-  ('equipos_seguimiento', '["contabilidad"]',
-   'Equipos que reciben aviso de cada cambio relevante, además del solicitante (contabilidad es dueña del proceso)')
+   'Equipos que pueden reasignar una transacción a otra persona del mismo equipo (vacaciones, ausencias). La persona asignada siempre puede.')
 ON CONFLICT (clave) DO NOTHING;

@@ -365,7 +365,7 @@ export async function anular(ctx: ContextoFlujo, actor: Actor, transaccionId: nu
     const actual = await trx.updateTable('transacciones')
       .set((eb) => ({ estado: 'anulada', asignado_a: null, cerrado_en: new Date(), version: eb('version', '+', 1) }))
       .where('id', '=', t.id).returningAll().executeTakeFirstOrThrow();
-    await emitirOutbox(trx, { tipo: 'transaccion.anulada', eventoId, t: actual, origen: etapa, destino: null, actor, motivo, appUrl: ctx.appUrl });
+    await emitirOutbox(trx, { tipo: 'transaccion.anulada', eventoId, t: actual, origen: etapa, destino: null, actor, motivo, teniaAsignadoId: t.asignado_a, appUrl: ctx.appUrl });
     return actual;
   });
 }

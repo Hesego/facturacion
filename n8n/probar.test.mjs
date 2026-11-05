@@ -41,8 +41,6 @@ const evento = (o = {}) => ({
   ],
   destinatarios: {
     responsables: [persona('ops.sst@hesego.test', 'Julián Ortiz')],
-    seguimiento: [persona('contabilidad2@hesego.test', 'Andrés Mejía'), persona('doble.rol@hesego.test', 'Camilo Torres')],
-    participantes: [],
   },
   ...o,
 });
@@ -125,7 +123,7 @@ describe('1 · Equipo responsable', () => {
     const r = await ejecutar('1-notificar-responsables.json', 'Preparar mensajes', webhook(evento({
       tipo: 'transaccion.reasignada', motivo: 'Vacaciones de Julián', etapa_origen: { codigo: 'RQ', nombre: 'Requerimiento' },
       actor: { nombre: 'Carolina Ruiz', email: 'contabilidad1@hesego.test' },
-      destinatarios: { responsables: [persona('ops.tics@hesego.test', 'Natalia Gómez')], seguimiento: [], participantes: [] },
+      destinatarios: { responsables: [persona('ops.tics@hesego.test', 'Natalia Gómez')] },
     })));
     assert.equal(r[0].json.para, 'ops.tics@hesego.test');
     assert.equal(r[0].json.asunto, 'Reasignado: Botas dieléctricas <para> cuadrillas [GTO-2026-000012]');
@@ -147,39 +145,24 @@ describe('1 · Equipo responsable', () => {
   });
 });
 
-describe('2 · Solicitante y contabilidad', () => {
-  it('avisa a seguimiento sin repetir correos', async () => {
-    const e = evento();
-    e.destinatarios.seguimiento.push(persona('CONTABILIDAD2@hesego.test', 'Andrés Mejía'));
-    const r = await ejecutar('2-notificar-seguimiento.json', 'Preparar mensajes', webhook(e));
-    assert.deepEqual(r.map((x) => x.json.para), ['contabilidad2@hesego.test', 'doble.rol@hesego.test']);
-    assert.equal(r[0].json.asunto, 'Avanzó a Requerimiento: Botas dieléctricas <para> cuadrillas [GTO-2026-000012]');
-    guardar('2-seguimiento', r[0].json.html);
-  });
-
-  it('en una anulación suma a los participantes, sin quien anuló', async () => {
+describe('1 · Anulación', () => {
+  it('avisa solo a quien la tenía pendiente, con el motivo', async () => {
     const e = evento({ tipo: 'transaccion.anulada', motivo: 'Solicitud duplicada', etapa_destino: null,
       actor: { nombre: 'Andrés Mejía', email: 'contabilidad2@hesego.test' } });
-    e.destinatarios.participantes = [persona('ops.sst@hesego.test', 'Julián Ortiz'), persona('contabilidad2@hesego.test', 'Andrés Mejía')];
-    const r = await ejecutar('2-notificar-seguimiento.json', 'Preparar mensajes', webhook(e));
-    assert.deepEqual(r.map((x) => x.json.para).sort(), ['doble.rol@hesego.test', 'ops.sst@hesego.test']);
+    const r = await ejecutar('1-notificar-responsables.json', 'Preparar mensajes', webhook(e));
+    assert.deepEqual(r.map((x) => x.json.para), ['ops.sst@hesego.test']);
     assert.equal(r[0].json.asunto, 'Anulado: Botas dieléctricas <para> cuadrillas [GTO-2026-000012]');
-    guardar('2-anulacion', r[0].json.html);
-  });
-
-  it('el paso a cierre lo deja al workflow 4', async () => {
-    const e = evento({ etapa_destino: { codigo: 'FT', nombre: 'Cierre', sla_dias: 3 } });
-    e.destinatarios.responsables = [];
-    assert.deepEqual(await ejecutar('2-notificar-seguimiento.json', 'Preparar mensajes', webhook(e)), [{ json: { vacio: true } }]);
+    assert.match(r[0].json.html, /Solicitud duplicada/);
+    guardar('1-anulacion', r[0].json.html);
   });
 });
 
 describe('4 · Cierre', () => {
-  it('avisa a todos los participantes', async () => {
+  it('avisa solo al solicitante', async () => {
     const e = evento({ tipo: 'transaccion.cerrada', actor: null });
-    e.destinatarios.participantes = [persona('ops.sst@hesego.test', 'J'), persona('compras1@hesego.test', 'D'), persona('contabilidad1@hesego.test', 'C')];
+    e.destinatarios.responsables = [persona('contabilidad1@hesego.test', 'Carolina Ruiz')];
     const r = await ejecutar('4-notificar-cierre.json', 'Preparar mensajes', webhook(e));
-    assert.equal(r.length, 3);
+    assert.deepEqual(r.map((x) => x.json.para), ['contabilidad1@hesego.test']);
     assert.equal(r[0].json.asunto, 'Pagado y cerrado: Botas dieléctricas <para> cuadrillas [GTO-2026-000012]');
     assert.equal(r[0].json.de, '"Gastos Hesego" <g@hesego.test>', 'sin actor: remitente de la plataforma');
     assert.equal(r[0].json.responder_a, '');

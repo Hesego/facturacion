@@ -46,17 +46,14 @@ describe('Atomicidad (regla 7)', () => {
 });
 
 describe('Outbox para n8n', () => {
-  it('al enviar, avisa solo a la persona elegida y hace seguimiento sin quien hizo el cambio', async () => {
+  it('al enviar, avisa solo a la persona elegida: ni a contabilidad ni al solicitante', async () => {
     const t = await nueva(ctx, { numero: 'OB-100', para: 'ops.tics@hesego.test', descripcion: 'Radios para supervisores' });
     const p = await ultimoOutbox(t.id, 'transaccion.avanzada');
     expect(p.transaccion).toMatchObject({ consecutivo: t.consecutivo, facturas: ['OB-100'], descripcion: 'Radios para supervisores',
       asignado: 'Natalia Gómez', url: `http://localhost:8080/transacciones/${t.id}` });
     expect(p.transaccion.valor_formateado).toMatch(/1\.500\.000/);
     expect(p.etapa_destino).toMatchObject({ codigo: 'RQ', sla_dias: 3 });
-    expect(p.destinatarios.responsables.map((r: any) => r.email)).toEqual(['ops.tics@hesego.test']);
-    const seguimiento = p.destinatarios.seguimiento.map((r: any) => r.email);
-    expect(seguimiento).toContain('contabilidad2@hesego.test');
-    expect(seguimiento).not.toContain('contabilidad1@hesego.test'); // es quien envió
+    expect(p.destinatarios).toEqual({ responsables: [expect.objectContaining({ email: 'ops.tics@hesego.test' })] });
   });
 
   it('la devolución avisa a quien la recibe de vuelta, con el motivo; la reasignación, a la nueva persona', async () => {
@@ -91,18 +88,14 @@ describe('Outbox para n8n', () => {
     expect(bandeja.find((x) => x.id === t.id)).toMatchObject({ ultima_observacion: 'Subí un pantallazo nuevo', ultima_observacion_de: 'Julián Ortiz' });
   });
 
-  it('el cierre y la anulación incluyen a todos los participantes', async () => {
+  it('el cierre avisa solo al solicitante y la anulación solo a quien la tenía pendiente', async () => {
     const pagada = await llevarHasta(ctx, (await nueva(ctx)).id, 'FT');
     const cierre = await ultimoOutbox(pagada.id, 'transaccion.cerrada');
-    expect(cierre.destinatarios.participantes.map((r: any) => r.email).sort()).toEqual([
-      'compras1@hesego.test', 'contabilidad1@hesego.test', 'contabilidad2@hesego.test', 'gerencia1@hesego.test',
-      'gfinanciera1@hesego.test', 'lider.sst@hesego.test', 'ops.sst@hesego.test',
-    ]);
-    expect(cierre.destinatarios.responsables).toEqual([]);
+    expect(cierre.destinatarios.responsables.map((r: any) => r.email)).toEqual(['contabilidad1@hesego.test']);
 
     const t = await llevarHasta(ctx, (await nueva(ctx)).id, 'AP');
     await anular(ctx, await actor(ctx, 'contabilidad2@hesego.test'), t.id, { version: t.version, motivo: 'Cambio de proveedor' });
     const an = await ultimoOutbox(t.id, 'transaccion.anulada');
-    expect(an.destinatarios.participantes.map((r: any) => r.email)).toEqual(expect.arrayContaining(['ops.sst@hesego.test', 'contabilidad1@hesego.test']));
+    expect(an.destinatarios.responsables.map((r: any) => r.email)).toEqual(['lider.sst@hesego.test']);
   });
 });
